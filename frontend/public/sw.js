@@ -1,4 +1,4 @@
-const CACHE_NAME = 'parada-espetinho-v1';
+const CACHE_NAME = 'parada-espetinho-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -62,7 +62,14 @@ self.addEventListener('fetch', (event) => {
       const fetchPromise = fetch(request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          caches.open(CACHE_NAME).then((cache) => {
+            // Evita cache de requests com esquemas não-http
+            if (request.url.startsWith('http')) {
+              cache.put(request, clone).catch(() => {
+                /* ignora erros de cache */
+              });
+            }
+          });
         }
         return networkResponse;
       });
