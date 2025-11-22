@@ -36,6 +36,7 @@ app.set('trust proxy', 1);
 const defaultOrigins = [
   'http://localhost:5173',
   'http://localhost:4173',
+  'https://api.paradadoespetinho.com',
   'https://parada-do-espetinho.vercel.app',
   'https://paradadoespetinho.com',
   'https://www.paradadoespetinho.com'
@@ -57,7 +58,7 @@ console.log('[cors] allowed origins =>', allowedOrigins);
 const corsOptions: CorsOptions = {
   origin(origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.paradadoespetinho.com')) {
       return callback(null, true);
     }
     console.warn('[cors] origin blocked:', origin);

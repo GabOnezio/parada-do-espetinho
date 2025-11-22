@@ -34,6 +34,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
+  // Ignora esquemas não-http (ex.: chrome-extension)
+  if (!request.url.startsWith('http')) {
+    return;
+  }
+
   // Não cacheia chamadas POST/PUT/DELETE da API
   if (request.url.includes('/api/') && request.method !== 'GET') {
     return;
