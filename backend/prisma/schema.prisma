@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
+enum PaymentType {
+  MONEY
+  PIX
+  CARD_DEBIT
+  CARD_CREDIT
+}
+
+enum SaleStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum PixStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELLED
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  passwordHash        String
+  role                UserRole  @default(EMPLOYEE)
+  name                String
+  phone               String?
+  isActive            Boolean   @default(true)
+  twoFactorSecret     String?
+  refreshTokenVersion Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  sales               Sale[]
+  profits             Profit[]
+  auditLogs           AuditLog[]
+}
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  type      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id             String    @id @default(cuid())
+  gtin           String    @unique
+  name           String
+  brand          String
+  price          Decimal   @db.Decimal(10, 2)
+  cost           Decimal   @db.Decimal(10, 2)
+  weight         Decimal   @db.Decimal(10, 2)
+  stock          Int       @default(0)
+  stockMin       Int       @default(0)
+  isActive       Boolean   @default(true)
+  promotionCode  String?
+  discountPercent Decimal   @db.Decimal(5, 2) @default(0)
+  isOnPromotion  Boolean   @default(false)
+  tags           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  saleItems      SaleItem[]
+}
+
+model Client {
+  id            String    @id @default(cuid())
+  name          String
+  email         String?   @unique
+  phone         String?
+  cpf           String?   @unique
+  totalSpent    Decimal   @db.Decimal(10, 2) @default(0)
+  purchaseCount Int       @default(0)
+  isPremium     Boolean   @default(false)
+  premiumSince  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sales         Sale[]
+  tickets       ClientTicket[]
+}
+
+model PromotionalTicket {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  discountPercent Decimal   @db.Decimal(5, 2)
+  description     String?
+  validFrom       DateTime?
+  validUntil      DateTime?
+  usageLimit      Int
+  usageCount      Int       @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  sales           Sale[]    @relation("TicketSales")
+  clientTickets   ClientTicket[]
+}
+
+model ClientTicket {
+  id        String             @id @default(cuid())
+  client    Client             @relation(fields: [clientId], references: [id])
+  clientId  String
+  ticket    PromotionalTicket  @relation(fields: [ticketId], references: [id])
+  ticketId  String
+  assignedAt DateTime          @default(now())
+  usedAt    DateTime?
+  isUsed    Boolean            @default(false)
+}
+
+model Sale {
+  id              String             @id @default(cuid())
+  user            User               @relation(fields: [userId], references: [id])
+  userId          String
+  client          Client?            @relation(fields: [clientId], references: [id])
+  clientId        String?
+  appliedTicket   PromotionalTicket? @relation("TicketSales", fields: [appliedTicketId], references: [id])
+  appliedTicketId String?
+  total           Decimal            @db.Decimal(10, 2)
+  paymentType     PaymentType
+  status          SaleStatus         @default(PENDING)
+  totalDiscount   Decimal            @db.Decimal(10, 2) @default(0)
+  createdAt       DateTime           @default(now())
+  saleItems       SaleItem[]
+  profits         Profit[]
+  pixCharges      PixCharge[]
+}
+
+model SaleItem {
+  id        String   @id @default(cuid())
+  sale      Sale     @relation(fields: [saleId], references: [id])
+  saleId    String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+  price     Decimal  @db.Decimal(10, 2)
+}
+
+model Profit {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  sale      Sale     @relation(fields: [saleId], references: [id])
+  saleId    String
+  amount    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+}
+
+model PixCharge {
+  id           String    @id @default(cuid())
+  sale         Sale?     @relation(fields: [saleId], references: [id])
+  saleId       String?
+  txId         String    @unique
+  amount       Decimal   @db.Decimal(10, 2)
+  status       PixStatus @default(PENDING)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  description  String?
+  payerName    String?
+  payerDocument String?
+  pixKey       PixKey?   @relation(fields: [pixKeyId], references: [id])
+  pixKeyId     String?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+}
+
+model PixKey {
+  id         String   @id @default(cuid())
+  type       String
+  key        String   @unique
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  charges    PixCharge[]
+}

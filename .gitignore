@@ -1,0 +1,11 @@
+node_modules
+*.log
+dist
+.DS_Store
+.env
+.vercel
+.idea
+coverage
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
