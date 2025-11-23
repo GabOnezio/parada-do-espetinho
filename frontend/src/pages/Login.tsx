@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
   const { login, verify2fa } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('admin@paradadoespetinho.com');
   const [password, setPassword] = useState('parada123');
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [twoFactorUserId, setTwoFactorUserId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const nextPath = searchParams.get('next') || '/admin';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +23,7 @@ const LoginPage = () => {
       if (result?.require2fa && result.userId) {
         setTwoFactorUserId(result.userId);
       } else {
-        navigate('/admin');
+        navigate(nextPath);
       }
     } catch (err) {
       setError('Credenciais inválidas');
@@ -37,7 +39,7 @@ const LoginPage = () => {
     setError('');
     try {
       await verify2fa(twoFactorUserId, twoFactorCode);
-      navigate('/admin');
+      navigate(nextPath);
     } catch (err) {
       setError('Código 2FA incorreto');
     } finally {

@@ -13,6 +13,7 @@ import salesRoutes from './routes/sales.js';
 import ticketRoutes from './routes/tickets.js';
 import pixRoutes from './routes/pix.js';
 import analyticsRoutes from './routes/analytics.js';
+import usersRoutes from './routes/users.js';
 
 // Carrega .env a partir da raiz do monorepo ou do workspace backend
 const __filename = fileURLToPath(import.meta.url);
@@ -91,6 +92,7 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/pix', pixRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/users', usersRoutes);
 
 app.use((_req, res) => {
   return res.status(404).json({ message: 'Not found' });

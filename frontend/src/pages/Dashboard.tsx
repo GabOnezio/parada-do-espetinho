@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -78,6 +79,17 @@ const DashboardPage = () => {
           <p className="text-sm text-slate-500">VIPs</p>
           <div className="mt-2 text-2xl font-bold text-secondary">{kpis?.vipClients?.length || 0}</div>
         </div>
+      </div>
+
+      <div className="glass-card flex flex-col gap-3 rounded-2xl border border-dashed border-primary/30 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-slate-500">Equipe</p>
+          <h2 className="text-lg font-semibold text-charcoal">Gerencie os funcionários</h2>
+          <p className="text-sm text-slate-600">Cadastre emails, telefones e senhas para novos colaboradores.</p>
+        </div>
+        <Link to="/admin/funcionarios" className="btn-primary whitespace-nowrap">
+          Ir para Funcionários
+        </Link>
       </div>
 
       <div className="glass-card p-4">

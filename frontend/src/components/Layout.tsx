@@ -5,12 +5,12 @@ import clsx from 'clsx';
 
 const navItems = [
   { to: '/admin', label: 'Dashboard' },
-  { to: '/admin/vendas', label: 'Vendas' },
   { to: '/admin/produtos', label: 'Produtos' },
   { to: '/admin/clientes', label: 'Clientes' },
   { to: '/admin/cupons', label: 'Cupons' },
   { to: '/admin/pix', label: 'Pix' },
-  { to: '/admin/analytics', label: 'Analytics' }
+  { to: '/admin/analytics', label: 'Analytics' },
+  { to: '/admin/funcionarios', label: 'Funcionários' }
 ];
 
 export const AppLayout = () => {
