@@ -43,19 +43,21 @@ router.post('/keys/:id/default', requireAdmin, async (req, res) => {
 });
 
 router.post('/charges', requireAuth, async (req, res) => {
-  const { amount, saleId, description, payerName, payerDocument } = req.body as {
+  const { amount, saleId, description, payerName, payerDocument, pixKeyId } = req.body as {
     amount: number;
     saleId?: string;
     description?: string;
     payerName?: string;
     payerDocument?: string;
+    pixKeyId?: string;
   };
 
   if (!amount) return res.status(400).json({ message: 'Valor é obrigatório' });
 
-  const pixKey =
-    (await prisma.pixKey.findFirst({ where: { isDefault: true } })) ||
-    (await prisma.pixKey.findFirst({ orderBy: { createdAt: 'asc' } }));
+  const pixKey = pixKeyId
+    ? await prisma.pixKey.findUnique({ where: { id: pixKeyId } })
+    : (await prisma.pixKey.findFirst({ where: { isDefault: true } })) ||
+      (await prisma.pixKey.findFirst({ orderBy: { createdAt: 'asc' } }));
 
   if (!pixKey) {
     return res.status(400).json({ message: 'Nenhuma chave Pix cadastrada' });

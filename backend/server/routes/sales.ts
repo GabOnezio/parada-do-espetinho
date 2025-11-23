@@ -62,6 +62,8 @@ router.post('/', requireAuth, async (req, res) => {
     : new Prisma.Decimal(0);
   const total = subtotal.sub(discount);
 
+  const saleStatus = paymentType === 'PIX' ? 'PENDING' : 'COMPLETED';
+
   const sale = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const createdSale = await tx.sale.create({
       data: {
@@ -71,7 +73,7 @@ router.post('/', requireAuth, async (req, res) => {
         total,
         paymentType,
         totalDiscount: discount,
-        status: 'COMPLETED',
+        status: saleStatus,
         saleItems: {
           create: items.map((i) => {
             const product = products.find((p) => p.id === i.productId)!;

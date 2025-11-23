@@ -1,8 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../api/client';
 
-type Product = { id: string; name: string; price: number; gtin: string; brand: string };
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  gtin: string;
+  brand: string;
+  discountPercent?: number;
+  isOnPromotion?: boolean;
+};
 type CartItem = { product: Product; quantity: number };
+type PixKey = { id: string; type: string; key: string; isDefault: boolean };
 
 const SalesPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -11,7 +20,11 @@ const SalesPage = () => {
   const [coupon, setCoupon] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
   const [paymentType, setPaymentType] = useState('PIX');
+  const [pixKeys, setPixKeys] = useState<PixKey[]>([]);
+  const [selectedPixKey, setSelectedPixKey] = useState<string | null>(null);
   const [message, setMessage] = useState('');
+  const [pixPayload, setPixPayload] = useState('');
+  const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -20,6 +33,26 @@ const SalesPage = () => {
     };
     load();
   }, [search]);
+
+  useEffect(() => {
+    const loadKeys = async () => {
+      try {
+        const res = await api.get('/pix/keys');
+        setPixKeys(res.data);
+        if (res.data.length) {
+          const def = res.data.find((k: PixKey) => k.isDefault) || res.data[0];
+          setSelectedPixKey(def.id);
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    loadKeys();
+  }, []);
+
+  useEffect(() => {
+    searchRef.current?.focus();
+  }, []);
 
   const addToCart = (product: Product) => {
     setCart((prev) => {
@@ -50,12 +83,33 @@ const SalesPage = () => {
 
   const finalize = async () => {
     try {
-      await api.post('/sales', {
-        items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
-        couponCode: appliedCoupon?.code,
-        paymentType
-      });
-      setMessage('Venda registrada com sucesso');
+      setPixPayload('');
+      if (paymentType === 'PIX') {
+        if (!selectedPixKey) {
+          setMessage('Selecione uma forma de pagamento Pix');
+          return;
+        }
+        const saleRes = await api.post('/sales', {
+          items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+          couponCode: appliedCoupon?.code,
+          paymentType
+        });
+        const chargeRes = await api.post('/pix/charges', {
+          amount: total.total,
+          saleId: saleRes.data.id,
+          pixKeyId: selectedPixKey,
+          description: 'Venda PDV'
+        });
+        setPixPayload(chargeRes.data.qrCodePayload);
+        setMessage('PIX gerado. Escaneie o QR Code para pagar.');
+      } else {
+        await api.post('/sales', {
+          items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+          couponCode: appliedCoupon?.code,
+          paymentType
+        });
+        setMessage('Venda registrada com sucesso');
+      }
       setCart([]);
       setAppliedCoupon(null);
       setCoupon('');
@@ -66,22 +120,26 @@ const SalesPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-sm text-slate-500">PDV</p>
-          <h1 className="text-xl font-bold text-charcoal">Vendas</h1>
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col">
+          <p className="text-sm text-slate-500">Vendas</p>
+          <h1 className="text-xl font-bold text-charcoal">PDV</h1>
         </div>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por nome, GTIN, marca"
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none md:w-80"
-        />
+        <div className="w-full md:w-96">
+          <label className="text-xs uppercase tracking-wide text-slate-500">Buscar item / GTIN</label>
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Escaneie o código ou digite nome/GTIN"
+            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="glass-card p-4 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-charcoal">Produtos</h2>
+          <h2 className="text-lg font-semibold text-charcoal">Carrinho</h2>
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
             {products.map((p) => (
               <button
@@ -91,6 +149,9 @@ const SalesPage = () => {
               >
                 <div className="text-sm font-semibold text-charcoal">{p.name}</div>
                 <div className="text-xs text-slate-500">{p.brand}</div>
+                {p.isOnPromotion && (
+                  <div className="text-xs font-semibold text-secondary">Desconto {Number(p.discountPercent || 0).toFixed(0)}%</div>
+                )}
                 <div className="mt-1 text-lg font-bold text-primary">R$ {Number(p.price).toFixed(2)}</div>
               </button>
             ))}
@@ -164,15 +225,47 @@ const SalesPage = () => {
                   onClick={() => setPaymentType(method)}
                   className={`btn flex-1 ${paymentType === method ? 'bg-primary text-white' : 'bg-white text-slate-700 border border-slate-200'}`}
                 >
-                  {method}
+                  {method === 'MONEY'
+                    ? 'DINHEIRO'
+                    : method === 'CARD_DEBIT'
+                    ? 'CARTÃO DE DÉBITO'
+                    : method === 'CARD_CREDIT'
+                    ? 'CARTÃO DE CRÉDITO'
+                    : 'PIX'}
                 </button>
               ))}
             </div>
 
+            {paymentType === 'PIX' && (
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+                <p className="text-xs uppercase tracking-wide text-slate-500">Formas de pagamento pix</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {pixKeys.length === 0 && <span className="text-xs text-slate-500">Nenhuma chave cadastrada</span>}
+                  {pixKeys.map((k) => (
+                    <button
+                      key={k.id}
+                      onClick={() => setSelectedPixKey(k.id)}
+                      className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
+                        selectedPixKey === k.id ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'
+                      }`}
+                    >
+                      {k.type.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button className="btn-primary w-full" onClick={finalize} disabled={!cart.length}>
-              Finalizar venda
+              {paymentType === 'PIX' ? 'Gerar PIX' : 'Finalizar venda'}
             </button>
             {message && <p className="text-xs text-slate-500">{message}</p>}
+            {pixPayload && (
+              <div className="mt-2 rounded-xl bg-white p-3 text-xs text-slate-700">
+                <p className="font-semibold text-charcoal">Payload do QR Code</p>
+                <code className="block break-words text-[11px] text-slate-600">{pixPayload}</code>
+              </div>
+            )}
           </div>
         </div>
       </div>
