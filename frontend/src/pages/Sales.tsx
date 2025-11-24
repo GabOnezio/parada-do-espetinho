@@ -128,6 +128,7 @@ const SalesPage = () => {
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'paid'>('idle');
   const [lastReceipt, setLastReceipt] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
+  const [pendingPixSale, setPendingPixSale] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -267,6 +268,7 @@ const SalesPage = () => {
       const totalSnapshot = total.total;
       const paymentSnapshot = paymentType;
       setPaymentStatus('idle');
+      setLastReceipt(null);
       if (paymentType === 'PIX') {
         if (!selectedPixKey) {
           setMessage('Selecione uma forma de pagamento Pix');
@@ -289,6 +291,7 @@ const SalesPage = () => {
         );
         setMessage('PIX gerado. Escaneie o QR Code para pagar.');
         setShowPixModal(true);
+        setPendingPixSale({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
       } else {
         await api.post('/sales', {
           items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
@@ -296,11 +299,11 @@ const SalesPage = () => {
           paymentType
         });
         setMessage('Venda registrada com sucesso');
+        setLastReceipt({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
+        setCart([]);
+        setAppliedCoupon(null);
+        setCoupon('');
       }
-      setCart([]);
-      setAppliedCoupon(null);
-      setCoupon('');
-      setLastReceipt({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
       // Atualiza ranking local de mais vendidos
       const statsRaw = localStorage.getItem(SALES_STATS_KEY);
       const stats: Record<string, number> = statsRaw ? JSON.parse(statsRaw) : {};
@@ -662,12 +665,23 @@ const SalesPage = () => {
               ) : (
                 <p className="text-sm text-slate-600">Gerando QR...</p>
               )}
-              <div className="text-2xl font-bold text-primary">R$ {total.total.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-primary">
+                R$ {(pendingPixSale?.total ?? total.total).toFixed(2)}
+              </div>
               <button
                 className="btn-primary w-full"
                 onClick={() => {
                   setPaymentStatus('paid');
-                  setTimeout(() => setShowPixModal(false), 900);
+                  setTimeout(() => {
+                    setShowPixModal(false);
+                    if (pendingPixSale) {
+                      setLastReceipt(pendingPixSale);
+                      setCart([]);
+                      setAppliedCoupon(null);
+                      setCoupon('');
+                      setPendingPixSale(null);
+                    }
+                  }, 900);
                 }}
               >
                 Pagar
