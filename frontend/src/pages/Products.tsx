@@ -38,7 +38,7 @@ import {
   Scissors,
   Fridge,
   Smartphone,
-  Chair,
+  Armchair,
   Gem
 } from 'lucide-react';
 import api from '../api/client';
@@ -104,7 +104,7 @@ const categories: Category[] = [
   { key: 'beleza', label: 'Beleza & Perfumaria', description: 'Cosméticos, perfumes, cabelo', icon: <Scissors size={16} /> },
   { key: 'eletrodomesticos', label: 'Eletrodomésticos', description: 'Geladeiras, fogões, micro-ondas, aspiradores', icon: <Fridge size={16} /> },
   { key: 'tecnologia', label: 'Tecnologia', description: 'Celulares, tablets, computadores, acessórios', icon: <Smartphone size={16} /> },
-  { key: 'moveis', label: 'Móveis', description: 'Sofás, mesas, cadeiras, camas', icon: <Chair size={16} /> },
+  { key: 'moveis', label: 'Móveis', description: 'Sofás, mesas, cadeiras, camas', icon: <Armchair size={16} /> },
   { key: 'joias', label: 'Joias & Relógios', description: 'Anéis, colares, pulseiras, relógios', icon: <Gem size={16} /> }
 ];
 
