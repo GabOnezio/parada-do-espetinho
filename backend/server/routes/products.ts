@@ -36,13 +36,13 @@ router.get('/:id', requireAuth, async (req, res) => {
   return res.json(product);
 });
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requireAuth, requireAdmin, async (req, res) => {
   const data = req.body;
   const product = await prisma.product.create({ data });
   return res.status(201).json(product);
 });
 
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
   const data = req.body;
   try {
     const product = await prisma.product.update({ where: { id: req.params.id }, data });
@@ -52,7 +52,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     await prisma.product.update({ where: { id: req.params.id }, data: { isActive: false } });
     return res.json({ message: 'Produto desativado' });
