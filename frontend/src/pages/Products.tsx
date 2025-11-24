@@ -1,5 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { Trash, SquarePen } from 'lucide-react';
+import {
+  Trash,
+  SquarePen,
+  Wheat,
+  Apple,
+  Milk,
+  Drumstick,
+  Croissant,
+  Snowflake,
+  CupSoda,
+  GlassWater,
+  Can,
+  ChefHat,
+  Candy,
+  Sparkles,
+  ShowerHead,
+  Battery
+} from 'lucide-react';
 import api from '../api/client';
 
 type Product = {
@@ -12,15 +29,65 @@ type Product = {
   weight?: number;
   stock: number;
   isActive: boolean;
+  categoryKey?: string;
 };
 
+type Category = {
+  key: string;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+};
+
+const categories: Category[] = [
+  { key: 'basicos', label: 'Alimentos Básicos', description: 'Arroz, feijão, farinhas, macarrão, óleo, sal, açúcar', icon: <Wheat size={16} /> },
+  { key: 'hortifruti', label: 'Hortifrúti', description: 'Frutas, legumes, verduras, temperos frescos', icon: <Apple size={16} /> },
+  { key: 'laticinios', label: 'Laticínios & Frios', description: 'Leite, queijos, iogurtes, frios', icon: <Milk size={16} /> },
+  { key: 'carnes', label: 'Carnes & Peixes', description: 'Bovina, frango, peixes, suína', icon: <Drumstick size={16} /> },
+  { key: 'paes', label: 'Pães & Panificação', description: 'Pães, biscoitos, panificados', icon: <Croissant size={16} /> },
+  { key: 'congelados', label: 'Alimentos Congelados', description: 'Pizza, lasanha, hambúrguer, vegetais', icon: <Snowflake size={16} /> },
+  { key: 'bebidas', label: 'Bebidas', description: 'Água, sucos, refrigerantes, cervejas, vinhos', icon: <CupSoda size={16} /> },
+  { key: 'processados', label: 'Alimentos Processados', description: 'Enlatados, extratos, geleias', icon: <Can size={16} /> },
+  { key: 'ingredientes', label: 'Ingredientes Culinários', description: 'Azeite, óleos, sal, açúcar, vinagre', icon: <ChefHat size={16} /> },
+  { key: 'ultraprocessados', label: 'Ultraprocessados', description: 'Biscoitos recheados, salgadinhos, instantâneos', icon: <Candy size={16} /> },
+  { key: 'limpeza', label: 'Produtos de Limpeza', description: 'Sabão, detergente, desinfetante', icon: <Sparkles size={16} /> },
+  { key: 'higiene', label: 'Higiene Pessoal', description: 'Shampoo, sabonete, pasta de dente', icon: <ShowerHead size={16} /> },
+  { key: 'eletronicos', label: 'Eletrônicos', description: 'Cabos, pilhas, lâmpadas', icon: <Battery size={16} /> },
+  { key: 'cafe', label: 'Bebidas Quentes', description: 'Café, chá, achocolatado', icon: <GlassWater size={16} /> }
+];
+
 const ProductsPage = () => {
+  const CATEGORY_STORE_KEY = 'productCategories';
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({ name: '', brand: '', gtin: '', price: 0, cost: 0, weight: 0, stock: 0 });
+  const [form, setForm] = useState({
+    name: '',
+    brand: '',
+    gtin: '',
+    price: 0,
+    cost: 0,
+    weight: 0,
+    stock: 0,
+    categoryKey: categories[0].key
+  });
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', brand: '', gtin: '', price: 0, cost: 0, weight: 0, stock: 0 });
+  const [editForm, setEditForm] = useState({
+    name: '',
+    brand: '',
+    gtin: '',
+    price: 0,
+    cost: 0,
+    weight: 0,
+    stock: 0,
+    categoryKey: categories[0].key
+  });
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+
+  const getCategory = (p: Product) => {
+    const key = categoryMap[p.id] || categoryMap[p.gtin] || p.categoryKey;
+    return categories.find((c) => c.key === key);
+  };
   const notifySW = () => {
     if (navigator.serviceWorker?.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'REFRESH_PRODUCTS' });
@@ -46,17 +113,34 @@ const ProductsPage = () => {
   };
 
   useEffect(() => {
+    const storedCats = localStorage.getItem(CATEGORY_STORE_KEY);
+    if (storedCats) {
+      try {
+        setCategoryMap(JSON.parse(storedCats));
+      } catch {
+        /* ignore */
+      }
+    }
     load();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/products', form);
-      setForm({ name: '', brand: '', gtin: '', price: 0, cost: 0, weight: 0, stock: 0 });
+      const { categoryKey, ...payload } = form;
+      const chosenCategory = categoryKey;
+      await api.post('/products', payload);
+      setForm({ name: '', brand: '', gtin: '', price: 0, cost: 0, weight: 0, stock: 0, categoryKey: categories[0].key });
       const updated = await api.get('/products', { params: { q: search } });
       setProducts(updated.data);
       localStorage.setItem('productsCache', JSON.stringify(updated.data));
+      // associa categoria ao produto criado
+      const created = updated.data.find((p: Product) => p.gtin === form.gtin || p.name === form.name);
+      if (created) {
+        const newMap = { ...categoryMap, [created.id]: chosenCategory, [created.gtin]: chosenCategory };
+        setCategoryMap(newMap);
+        localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(newMap));
+      }
       notifySW();
     } catch (err) {
       // ignore
@@ -77,6 +161,7 @@ const ProductsPage = () => {
 
   const startEdit = (p: Product) => {
     setEditing(p);
+    const cat = categoryMap[p.id] || categoryMap[p.gtin] || categories[0].key;
     setEditForm({
       name: p.name,
       brand: p.brand,
@@ -84,7 +169,8 @@ const ProductsPage = () => {
       price: p.price,
       cost: p.cost || 0,
       weight: p.weight || 0,
-      stock: p.stock
+      stock: p.stock,
+      categoryKey: cat
     });
   };
 
@@ -92,10 +178,17 @@ const ProductsPage = () => {
     e.preventDefault();
     if (!editing) return;
     try {
-      await api.put(`/products/${editing.id}`, editForm);
+      const { categoryKey, ...payload } = editForm;
+      await api.put(`/products/${editing.id}`, payload);
       const updated = await api.get('/products', { params: { q: search } });
       setProducts(updated.data);
       localStorage.setItem('productsCache', JSON.stringify(updated.data));
+      // salva categoria editada
+      const newMap = { ...categoryMap };
+      newMap[editing.id] = editForm.categoryKey;
+      newMap[editing.gtin] = editForm.categoryKey;
+      setCategoryMap(newMap);
+      localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(newMap));
       notifySW();
       setEditing(null);
     } catch (err) {
@@ -202,6 +295,20 @@ const ProductsPage = () => {
                 />
               </div>
             </div>
+            <div>
+              <label className="text-xs uppercase tracking-wide text-slate-500">Categoria</label>
+              <select
+                value={form.categoryKey}
+                onChange={(e) => setForm((prev) => ({ ...prev, categoryKey: e.target.value }))}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >
+                {categories.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button type="submit" className="btn-primary w-full">
               Salvar
             </button>
@@ -220,10 +327,20 @@ const ProductsPage = () => {
                 key={p.id}
                 className="flex flex-col gap-1 rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm md:flex-row md:items-center md:justify-between"
               >
-                <div className="flex-1">
-                  <div className="text-sm font-semibold text-charcoal">{p.name}</div>
-                  <div className="text-xs text-slate-500">
-                    GTIN {p.gtin} • {p.brand}
+                <div className="flex flex-1 items-start gap-2">
+                  {getCategory(p) && (
+                    <span
+                      className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700"
+                      title={`${getCategory(p)!.label} – ${getCategory(p)!.description}`}
+                    >
+                      {getCategory(p)!.icon}
+                    </span>
+                  )}
+                  <div>
+                    <div className="text-sm font-semibold text-charcoal">{p.name}</div>
+                    <div className="text-xs text-slate-500">
+                      GTIN {p.gtin} • {p.brand}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -335,6 +452,20 @@ const ProductsPage = () => {
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wide text-slate-500">Categoria</label>
+                <select
+                  value={editForm.categoryKey}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, categoryKey: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                >
+                  {categories.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="mt-4 flex items-center justify-end gap-2">
                 <button type="button" onClick={() => setEditing(null)} className="btn-ghost">
