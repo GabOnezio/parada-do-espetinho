@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Trash } from 'lucide-react';
 import api from '../api/client';
 
 type Product = {
@@ -49,6 +50,17 @@ const ProductsPage = () => {
       const updated = await api.get('/products', { params: { q: search } });
       setProducts(updated.data);
       localStorage.setItem('productsCache', JSON.stringify(updated.data));
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await api.delete(`/products/${id}`);
+      const updated = products.filter((p) => p.id !== id);
+      setProducts(updated);
+      localStorage.setItem('productsCache', JSON.stringify(updated));
     } catch (err) {
       // ignore
     }
@@ -171,15 +183,24 @@ const ProductsPage = () => {
                 key={p.id}
                 className="flex flex-col gap-1 rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm md:flex-row md:items-center md:justify-between"
               >
-                <div>
+                <div className="flex-1">
                   <div className="text-sm font-semibold text-charcoal">{p.name}</div>
                   <div className="text-xs text-slate-500">
                     GTIN {p.gtin} • {p.brand}
                   </div>
                 </div>
-                <div className="text-right text-sm font-semibold text-primary">
-                  R$ {Number(p.price).toFixed(2)}
-                  <div className="text-xs text-slate-500">Estoque {p.stock}</div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right text-sm font-semibold text-primary">
+                    R$ {Number(p.price).toFixed(2)}
+                    <div className="text-xs text-slate-500">Estoque {p.stock}</div>
+                  </div>
+                  <button
+                    className="rounded-lg bg-red-100 p-2 text-black hover:bg-red-200"
+                    title="Remover produto"
+                    onClick={() => handleDelete(p.id)}
+                  >
+                    <Trash size={16} />
+                  </button>
                 </div>
               </div>
             ))}
