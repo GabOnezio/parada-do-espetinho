@@ -19,6 +19,13 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const panelContext = nextPath.startsWith('/vendas') ? 'VENDAS' : 'ADMIN';
 
+  useEffect(() => {
+    if (twoFactorUri) {
+      const timer = setTimeout(() => setHideQr(true), 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [twoFactorUri]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -28,10 +35,10 @@ const LoginPage = () => {
       if (result?.require2fa && result.userId) {
         setTwoFactorUserId(result.userId);
         setTwoFactorUri(result.otpauthUrl || null);
-        setHideQr(false);
-      } else {
-        navigate(nextPath);
-      }
+      setHideQr(false);
+    } else {
+      navigate(nextPath);
+    }
     } catch (err) {
       setError('Credenciais inválidas');
     } finally {
