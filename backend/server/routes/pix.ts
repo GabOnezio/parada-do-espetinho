@@ -48,8 +48,9 @@ function buildPixPayload({
   merchantName?: string;
   merchantCity?: string;
 }) {
+  const pixKey = key.replace(/\s+/g, '');
   const gui = tlv('00', 'BR.GOV.BCB.PIX');
-  const keyField = tlv('01', key);
+  const keyField = tlv('01', pixKey);
   const descField = description ? tlv('02', sanitize(description, 50)) : '';
   const merchantAccountInfo = tlv('26', `${gui}${keyField}${descField}`);
 
