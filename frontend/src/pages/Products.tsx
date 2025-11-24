@@ -233,12 +233,14 @@ const ProductsPage = () => {
                     onChange(c.key);
                     setOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-primary/5"
-                  title={`${c.label} – ${c.description}`}
-                >
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-primary/5"
+                title={`${c.label} – ${c.description}`}
+                style={{ borderRadius: '10px', opacity: 0.78 }}
+              >
                   <span
                     className="flex h-6 w-6 items-center justify-center rounded-lg text-white"
                     style={{ backgroundColor: categoryColors[c.key] || '#e2e8f0' }}
+                    title={`${c.label} – ${c.description}`}
                   >
                     {c.icon}
                   </span>
@@ -481,7 +483,7 @@ const ProductsPage = () => {
                   {getCategory(p) && (
                     <span
                       className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-lg text-white"
-                      style={{ backgroundColor: categoryColors[getCategory(p)!.key] || '#e2e8f0' }}
+                      style={{ backgroundColor: categoryColors[getCategory(p)!.key] || '#e2e8f0', opacity: 0.78, borderRadius: '10px' }}
                       title={`${getCategory(p)!.label} – ${getCategory(p)!.description}`}
                     >
                       {getCategory(p)!.icon}
