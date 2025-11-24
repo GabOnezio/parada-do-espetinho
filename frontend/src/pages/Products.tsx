@@ -267,10 +267,10 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        <div className="glass-card p-4">
+      <div className="grid grid-cols-1 gap-4 relative">
+        <div className="relative z-20 glass-card p-4">
           <h2 className="text-lg font-semibold text-charcoal">Novo produto</h2>
-          <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+          <form className="relative z-20 mt-4 space-y-3" onSubmit={handleSubmit}>
             <input
               placeholder="GTIN"
               value={form.gtin}
