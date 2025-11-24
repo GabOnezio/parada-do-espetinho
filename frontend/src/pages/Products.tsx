@@ -214,9 +214,10 @@ const ProductsPage = () => {
         </button>
         {open && (
           <div
-            className={`absolute z-20 w-full max-h-64 overflow-y-auto rounded-b-xl border border-slate-200 bg-white shadow-lg ${
-              dropUp ? 'bottom-[110%]' : 'mt-1'
+            className={`absolute z-20 w-full max-h-64 overflow-y-auto border border-slate-200 bg-white shadow-lg ${
+              dropUp ? 'bottom-[102%] rounded-t-xl' : 'mt-1 rounded-b-xl'
             }`}
+            style={dropUp ? { borderTopLeftRadius: '12px', borderTopRightRadius: '12px', borderBottomLeftRadius: '4px', borderBottomRightRadius: '4px' } : undefined}
           >
             {categories.map((c) => (
               <button
