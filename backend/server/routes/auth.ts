@@ -80,7 +80,7 @@ router.post('/login', async (req, res) => {
     ? null
     : await prisma.user.findUnique({ where: { id: user.id }, select: { twoFactorSecret: true } });
   const secretToUse =
-    currentSecret || (freshUser ? parseSecrets(freshUser.twoFactorSecret).sales || parseSecrets(freshUser.twoFactorSecret).admin : null);
+    currentSecret || (freshUser ? parseSecrets(freshUser.twoFactorSecret)[secretKey] || null : null);
   if (!secretToUse || !totp || !authenticator.verify({ token: totp, secret: secretToUse })) {
     return res.status(401).json({ message: 'Código 2FA incorreto' });
   }
