@@ -33,6 +33,8 @@ const SalesPage = () => {
   const [pixPayload, setPixPayload] = useState('');
   const [pixQr, setPixQr] = useState('');
   const [showPixModal, setShowPixModal] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [pendingCount, setPendingCount] = useState(0);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -76,6 +78,7 @@ const SalesPage = () => {
       if (!navigator.onLine) return;
       try {
         const pending = await getPendingSales();
+        setPendingCount(pending.length);
         for (const sale of pending) {
           try {
             const saleRes = await api.post('/sales', {
@@ -89,12 +92,16 @@ const SalesPage = () => {
             // se falhar, tenta depois
           }
         }
+        const remaining = await getPendingSales();
+        setPendingCount(remaining.length);
       } catch {
         /* ignore */
       }
     };
     sync();
     window.addEventListener('online', sync);
+    window.addEventListener('offline', () => setIsOffline(true));
+    window.addEventListener('online', () => setIsOffline(false));
     return () => window.removeEventListener('online', sync);
   }, []);
 
@@ -245,6 +252,14 @@ const SalesPage = () => {
 
   return (
     <div className="space-y-6">
+      {(isOffline || pendingCount > 0) && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {isOffline ? 'Offline – mostrando dados locais.' : 'Online'}
+          {pendingCount > 0 && (
+            <span className="ml-2 font-semibold text-amber-900">Vendas pendentes: {pendingCount}</span>
+          )}
+        </div>
+      )}
       <div className="grid gap-4 lg:grid-cols-[2.5fr_0.8fr]">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">

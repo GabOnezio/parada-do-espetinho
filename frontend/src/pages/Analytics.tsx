@@ -91,20 +91,24 @@ const AnalyticsPage = () => {
         <div className="glass-card p-4">
           <p className="text-xs text-slate-500">Volume do dia</p>
           <div className="text-2xl font-bold text-primary">R$ {Number(data?.todayVolume || 0).toFixed(2)}</div>
+          <span className="text-[11px] text-slate-500">{usingLocal ? 'Fonte: local' : 'Fonte: servidor'}</span>
         </div>
         <div className="glass-card p-4">
           <p className="text-xs text-slate-500">Ticket médio</p>
           <div className="text-2xl font-bold text-charcoal">R$ {Number(data?.averageTicket || 0).toFixed(2)}</div>
+          <span className="text-[11px] text-slate-500">{usingLocal ? 'Fonte: local' : 'Fonte: servidor'}</span>
         </div>
         <div className="glass-card p-4">
           <p className="text-xs text-slate-500">Produtos quentes</p>
           <div className="text-sm font-semibold text-charcoal">
             {data?.topProducts?.slice(0, 2).map((p) => p.product?.name).join(', ') || '--'}
           </div>
+          <span className="text-[11px] text-slate-500">{usingLocal ? 'Fonte: local' : 'Fonte: servidor'}</span>
         </div>
         <div className="glass-card p-4">
           <p className="text-xs text-slate-500">VIPs</p>
           <div className="text-2xl font-bold text-secondary">{data?.vipClients?.length || 0}</div>
+          <span className="text-[11px] text-slate-500">{usingLocal ? 'Fonte: local' : 'Fonte: servidor'}</span>
         </div>
       </div>
 
