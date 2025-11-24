@@ -14,8 +14,12 @@ type Product = {
 type CartItem = { product: Product; quantity: number };
 type PixKey = { id: string; type: string; key: string; isDefault: boolean };
 
+const PRODUCTS_CACHE_KEY = 'pdv-products-cache';
+const SALES_STATS_KEY = 'pdv-sales-stats';
+
 const SalesPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [loadedRemote, setLoadedRemote] = useState(false);
   const [search, setSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -31,12 +35,29 @@ const SalesPage = () => {
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    const load = async () => {
-      const res = await api.get('/products', { params: { q: search } });
-      setProducts(res.data);
+    // Primeiro tenta cache local
+    const cached = localStorage.getItem(PRODUCTS_CACHE_KEY);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setProducts(parsed);
+      } catch {
+        /* ignore */
+      }
+    }
+    // Depois busca remoto e atualiza cache
+    const loadRemote = async () => {
+      try {
+        const res = await api.get('/products');
+        setProducts(res.data);
+        localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(res.data));
+        setLoadedRemote(true);
+      } catch {
+        setLoadedRemote(false);
+      }
     };
-    load();
-  }, [search]);
+    loadRemote();
+  }, []);
 
   useEffect(() => {
     const loadKeys = async () => {
@@ -127,10 +148,43 @@ const SalesPage = () => {
       setCart([]);
       setAppliedCoupon(null);
       setCoupon('');
+      // Atualiza ranking local de mais vendidos
+      const statsRaw = localStorage.getItem(SALES_STATS_KEY);
+      const stats: Record<string, number> = statsRaw ? JSON.parse(statsRaw) : {};
+      cart.forEach((c) => {
+        stats[c.product.id] = (stats[c.product.id] || 0) + c.quantity;
+      });
+      localStorage.setItem(SALES_STATS_KEY, JSON.stringify(stats));
     } catch (err) {
       setMessage('Erro ao registrar venda');
     }
   };
+
+  const stats = useMemo(() => {
+    const raw = localStorage.getItem(SALES_STATS_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+  }, [cart.length]); // recalcula quando mexe no carrinho (após venda)
+
+  const filteredProducts = useMemo(() => {
+    if (!search.trim()) return products;
+    const term = search.toLowerCase();
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(term) ||
+        p.brand.toLowerCase().includes(term) ||
+        p.gtin.toLowerCase().includes(term)
+    );
+  }, [products, search]);
+
+  const bestSellers = useMemo(() => {
+    const entries = Object.entries(stats)
+      .map(([id, count]) => ({ id, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map((entry) => products.find((p) => p.id === entry.id))
+      .filter(Boolean) as Product[];
+    return entries.length ? entries : products.slice(0, 5);
+  }, [stats, products]);
 
   return (
     <div className="space-y-6">
@@ -153,10 +207,12 @@ const SalesPage = () => {
               />
               {showSuggestions && (
                 <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
-                  {products.length === 0 && (
-                    <div className="px-3 py-2 text-sm text-slate-500">Digite ou escaneie para buscar produtos.</div>
+                  {filteredProducts.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-slate-500">
+                      {loadedRemote ? 'Nenhum produto encontrado.' : 'Digite ou escaneie para buscar produtos.'}
+                    </div>
                   )}
-                  {products.map((p) => (
+                  {(search.trim() ? filteredProducts : bestSellers).map((p) => (
                     <button
                       key={p.id}
                       onMouseDown={(e) => e.preventDefault()}
