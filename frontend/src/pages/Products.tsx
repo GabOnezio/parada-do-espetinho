@@ -88,6 +88,54 @@ const ProductsPage = () => {
     const key = categoryMap[p.id] || categoryMap[p.gtin] || p.categoryKey;
     return categories.find((c) => c.key === key);
   };
+
+  const renderCategoryDropdown = (
+    value: string,
+    onChange: (val: string) => void,
+    open: boolean,
+    setOpen: (v: boolean) => void
+  ) => {
+    const selected = categories.find((c) => c.key === value) || categories[0];
+    return (
+      <div className="relative">
+        <label className="text-xs uppercase tracking-wide text-slate-500">Categoria</label>
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="mt-1 flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        >
+          <span className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+              {selected.icon}
+            </span>
+            {selected.label}
+          </span>
+          <span className="text-slate-500">▾</span>
+        </button>
+        {open && (
+          <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-b-xl border border-slate-200 bg-white shadow-lg">
+            {categories.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => {
+                  onChange(c.key);
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-primary/5"
+                title={`${c.label} – ${c.description}`}
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                  {c.icon}
+                </span>
+                <span>{c.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
   const notifySW = () => {
     if (navigator.serviceWorker?.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'REFRESH_PRODUCTS' });
@@ -295,20 +343,7 @@ const ProductsPage = () => {
                 />
               </div>
             </div>
-            <div>
-              <label className="text-xs uppercase tracking-wide text-slate-500">Categoria</label>
-              <select
-                value={form.categoryKey}
-                onChange={(e) => setForm((prev) => ({ ...prev, categoryKey: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              >
-                {categories.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {renderCategoryDropdown(form.categoryKey, (val) => setForm((prev) => ({ ...prev, categoryKey: val })), catOpen, setCatOpen)}
             <button type="submit" className="btn-primary w-full">
               Salvar
             </button>
@@ -453,20 +488,12 @@ const ProductsPage = () => {
                   />
                 </div>
               </div>
-              <div>
-                <label className="text-xs uppercase tracking-wide text-slate-500">Categoria</label>
-                <select
-                  value={editForm.categoryKey}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, categoryKey: e.target.value }))}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                >
-                  {categories.map((c) => (
-                    <option key={c.key} value={c.key}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {renderCategoryDropdown(
+                editForm.categoryKey,
+                (val) => setEditForm((prev) => ({ ...prev, categoryKey: val })),
+                editCatOpen,
+                setEditCatOpen
+              )}
               <div className="mt-4 flex items-center justify-end gap-2">
                 <button type="button" onClick={() => setEditing(null)} className="btn-ghost">
                   Cancelar
