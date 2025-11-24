@@ -190,9 +190,14 @@ const ProductsPage = () => {
     onChange: (val: string) => void,
     open: boolean,
     setOpen: (v: boolean) => void,
-    dropUp = false
+    dropUp = false,
+    filterValue = '',
+    setFilter?: (v: string) => void
   ) => {
     const selected = categories.find((c) => c.key === value) || categories[0];
+    const filtered = categories.filter((c) =>
+      `${c.label} ${c.description}`.toLowerCase().includes(filterValue.toLowerCase())
+    );
     return (
       <div className="relative">
         <label className="text-xs uppercase tracking-wide text-slate-500">Categoria</label>
@@ -225,7 +230,17 @@ const ProductsPage = () => {
                   : undefined
               }
             >
-              {categories.map((c) => (
+              {setFilter && (
+                <div className="sticky top-0 z-50 bg-white px-3 py-2">
+                  <input
+                    value={filterValue}
+                    onChange={(e) => setFilter(e.target.value)}
+                    placeholder="Buscar categoria..."
+                    className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+              )}
+              {filtered.map((c) => (
                 <button
                   key={c.key}
                   type="button"
@@ -460,7 +475,15 @@ const ProductsPage = () => {
                 />
               </div>
             </div>
-            {renderCategoryDropdown(form.categoryKey, (val) => setForm((prev) => ({ ...prev, categoryKey: val })), catOpen, setCatOpen)}
+            {renderCategoryDropdown(
+              form.categoryKey,
+              (val) => setForm((prev) => ({ ...prev, categoryKey: val })),
+              catOpen,
+              setCatOpen,
+              false,
+              catFilter,
+              setCatFilter
+            )}
             <button type="submit" className="btn-primary w-full">
               Salvar
             </button>
@@ -611,7 +634,9 @@ const ProductsPage = () => {
                 (val) => setEditForm((prev) => ({ ...prev, categoryKey: val })),
                 editCatOpen,
                 setEditCatOpen,
-                true
+                true,
+                editCatFilter,
+                setEditCatFilter
               )}
               <div className="mt-4 flex items-center justify-end gap-2">
                 <button type="button" onClick={() => setEditing(null)} className="btn-ghost">
