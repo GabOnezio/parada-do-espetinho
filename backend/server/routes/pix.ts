@@ -6,6 +6,72 @@ import { requireAdmin, requireAuth } from '../middlewares/auth.js';
 
 const router = Router();
 
+// Utilitários para gerar payload BR Code válido (Pix)
+const tlv = (id: string, value: string) => `${id}${value.length.toString().padStart(2, '0')}${value}`;
+
+function crc16(payload: string) {
+  let crc = 0xffff;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if (crc & 0x8000) {
+        crc = (crc << 1) ^ 0x1021;
+      } else {
+        crc <<= 1;
+      }
+      crc &= 0xffff;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function buildPixPayload({
+  key,
+  txId,
+  amount,
+  description,
+  merchantName = 'Parada do Espetinho',
+  merchantCity = 'BRASILIA'
+}: {
+  key: string;
+  txId: string;
+  amount: number;
+  description?: string;
+  merchantName?: string;
+  merchantCity?: string;
+}) {
+  const gui = tlv('00', 'BR.GOV.BCB.PIX');
+  const keyField = tlv('01', key);
+  const descField = description ? tlv('02', description.slice(0, 50)) : '';
+  const merchantAccountInfo = tlv('26', `${gui}${keyField}${descField}`);
+
+  const payloadFormatIndicator = tlv('00', '01');
+  const pointOfInitiation = tlv('01', '12'); // dinâmica
+  const merchantCategoryCode = tlv('52', '0000');
+  const transactionCurrency = tlv('53', '986');
+  const transactionAmount = tlv('54', Number(amount).toFixed(2));
+  const countryCode = tlv('58', 'BR');
+  const nameField = tlv('59', merchantName.slice(0, 25));
+  const cityField = tlv('60', merchantCity.slice(0, 15) || 'BRASILIA');
+  const addDataField = tlv('62', tlv('05', txId.slice(0, 25)));
+
+  const withoutCrc =
+    payloadFormatIndicator +
+    pointOfInitiation +
+    merchantAccountInfo +
+    merchantCategoryCode +
+    transactionCurrency +
+    transactionAmount +
+    countryCode +
+    nameField +
+    cityField +
+    addDataField +
+    '6304';
+
+  const crc = crc16(withoutCrc);
+  return withoutCrc + crc;
+}
+
 router.get('/keys', requireAuth, async (_req, res) => {
   const keys = await prisma.pixKey.findMany({ orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }] });
   return res.json(keys);
@@ -109,9 +175,14 @@ router.post('/charges', requireAuth, async (req, res) => {
     }
   });
 
-  const payload = `pix://pay?txid=${txId}&amount=${amount}&key=${encodeURIComponent(pixKey.key)}&descr=${encodeURIComponent(
-    description || 'Parada do Espetinho'
-  )}`;
+  const payload = buildPixPayload({
+    key: pixKey.key,
+    txId,
+    amount,
+    description: description || 'Parada do Espetinho',
+    merchantName: 'Parada do Espetinho',
+    merchantCity: 'BRASILIA'
+  });
 
   return res.status(201).json({
     charge,
