@@ -25,6 +25,7 @@ const SalesPage = () => {
   const [message, setMessage] = useState('');
   const [pixPayload, setPixPayload] = useState('');
   const [pixQr, setPixQr] = useState('');
+  const [showPixModal, setShowPixModal] = useState(false);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -86,6 +87,7 @@ const SalesPage = () => {
     try {
       setPixPayload('');
       setPixQr('');
+      setShowPixModal(false);
       if (paymentType === 'PIX') {
         if (!selectedPixKey) {
           setMessage('Selecione uma forma de pagamento Pix');
@@ -107,6 +109,7 @@ const SalesPage = () => {
           `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(chargeRes.data.qrCodePayload)}&size=320x320`
         );
         setMessage('PIX gerado. Escaneie o QR Code para pagar.');
+        setShowPixModal(true);
       } else {
         await api.post('/sales', {
           items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
@@ -273,7 +276,7 @@ const SalesPage = () => {
                 {paymentType === 'PIX' ? 'Gerar PIX' : 'Finalizar venda'}
               </button>
               {message && <p className="text-xs text-slate-500">{message}</p>}
-            {pixPayload && (
+              {pixPayload && (
               <div className="mt-2 rounded-xl bg-white p-3 text-xs text-slate-700">
                 <p className="font-semibold text-charcoal">QR Code do PIX</p>
                 {pixQr ? (
@@ -290,6 +293,35 @@ const SalesPage = () => {
           </div>
         </div>
       </div>
+      {showPixModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-charcoal">Pagamento PIX</h3>
+              <button className="text-slate-500" onClick={() => setShowPixModal(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="mt-4 flex flex-col items-center gap-3">
+              {pixQr ? (
+                <img src={pixQr} alt="QR Pix" className="h-64 w-64" />
+              ) : (
+                <p className="text-sm text-slate-600">Gerando QR...</p>
+              )}
+              {pixPayload && (
+                <code className="block break-words rounded-lg bg-slate-100 p-2 text-center text-[11px] text-slate-600">
+                  {pixPayload}
+                </code>
+              )}
+            </div>
+            <div className="mt-4 text-right">
+              <button className="btn-primary" onClick={() => setShowPixModal(false)}>
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
