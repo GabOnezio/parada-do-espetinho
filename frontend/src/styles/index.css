@@ -36,3 +36,22 @@ body {
 .btn-ghost {
   @apply btn text-sm text-slate-600 hover:bg-slate-100;
 }
+
+@keyframes ping-slow {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
+.animate-ping-slow {
+  animation: ping-slow 0.8s ease-in-out forwards;
+}

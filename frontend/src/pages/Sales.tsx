@@ -660,11 +660,20 @@ const SalesPage = () => {
               </button>
             </div>
             <div className="mt-4 flex flex-col items-center gap-3">
-              {pixQr ? (
-                <img src={pixQr} alt="QR Pix" className="h-64 w-64" />
-              ) : (
-                <p className="text-sm text-slate-600">Gerando QR...</p>
-              )}
+              <div className="relative flex flex-col items-center gap-3">
+                {pixQr ? (
+                  <img src={pixQr} alt="QR Pix" className="h-64 w-64 transition-opacity duration-300" />
+                ) : (
+                  <p className="text-sm text-slate-600">Gerando QR...</p>
+                )}
+                {paymentStatus === 'paid' && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="animate-ping-slow flex h-28 w-28 items-center justify-center rounded-full bg-green-500/80 text-white">
+                      ✔
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="text-2xl font-bold text-primary">
                 R$ {(pendingPixSale?.total ?? total.total).toFixed(2)}
               </div>
@@ -686,12 +695,6 @@ const SalesPage = () => {
               >
                 Pagar
               </button>
-              {paymentStatus === 'paid' && (
-                <div className="flex flex-col items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-green-700">
-                  <span className="text-base font-semibold">PAGAMENTO CONCLUÍDO</span>
-                  <span className="animate-pulse text-2xl">✔</span>
-                </div>
-              )}
             </div>
             <div className="mt-4 text-right">
           <button className="btn-primary" onClick={() => setShowPixModal(false)}>
