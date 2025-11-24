@@ -16,8 +16,8 @@ const ClientRegisterPage = () => {
       setMessage('Nome é obrigatório');
       return;
     }
-    if (!form.email.trim() && !form.phone.trim()) {
-      setMessage('Informe email ou telefone');
+    if (!form.email.trim() && !form.phone.trim() && !form.cpf.trim()) {
+      setMessage('Informe email, telefone ou CPF');
       return;
     }
     setLoading(true);
