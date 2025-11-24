@@ -213,33 +213,40 @@ const ProductsPage = () => {
           <span className="text-slate-500">▾</span>
         </button>
         {open && (
-          <div
-            className={`absolute z-20 w-full max-h-64 overflow-y-auto border border-slate-200 bg-white shadow-lg ${
-              dropUp ? 'bottom-[102%] rounded-t-xl' : 'mt-1 rounded-b-xl'
-            }`}
-            style={dropUp ? { borderTopLeftRadius: '12px', borderTopRightRadius: '12px', borderBottomLeftRadius: '4px', borderBottomRightRadius: '4px' } : undefined}
-          >
-            {categories.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                onClick={() => {
-                  onChange(c.key);
-                  setOpen(false);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-primary/5"
-                title={`${c.label} – ${c.description}`}
-              >
-                <span
-                  className="flex h-6 w-6 items-center justify-center rounded-lg text-white"
-                  style={{ backgroundColor: categoryColors[c.key] || '#e2e8f0' }}
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} aria-label="Fechar categorias" />
+            <div
+              className={`absolute z-40 w-full max-h-64 overflow-y-auto border border-slate-200 bg-white shadow-lg ${
+                dropUp ? 'bottom-[102%] rounded-t-xl' : 'mt-1 rounded-b-xl'
+              }`}
+              style={
+                dropUp
+                  ? { borderTopLeftRadius: '12px', borderTopRightRadius: '12px', borderBottomLeftRadius: '4px', borderBottomRightRadius: '4px' }
+                  : undefined
+              }
+            >
+              {categories.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => {
+                    onChange(c.key);
+                    setOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-primary/5"
+                  title={`${c.label} – ${c.description}`}
                 >
-                  {c.icon}
-                </span>
-                <span>{c.label}</span>
-              </button>
-            ))}
-          </div>
+                  <span
+                    className="flex h-6 w-6 items-center justify-center rounded-lg text-white"
+                    style={{ backgroundColor: categoryColors[c.key] || '#e2e8f0' }}
+                  >
+                    {c.icon}
+                  </span>
+                  <span>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
     );
