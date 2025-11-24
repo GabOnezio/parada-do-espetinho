@@ -70,6 +70,7 @@ const ProductsPage = () => {
     stock: 0,
     categoryKey: categories[0].key
   });
+  const [catOpen, setCatOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState({
@@ -82,6 +83,7 @@ const ProductsPage = () => {
     stock: 0,
     categoryKey: categories[0].key
   });
+  const [editCatOpen, setEditCatOpen] = useState(false);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
 
   const getCategory = (p: Product) => {
