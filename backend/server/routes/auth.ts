@@ -35,7 +35,7 @@ router.post('/login', async (req, res) => {
     totp?: string;
     context?: 'ADMIN' | 'VENDAS';
   };
-  const issuerLabel = context === 'VENDAS' ? 'Parada do Espetinho Vendas' : 'Parada do Espetinho Adm';
+  const issuerLabel = 'Parada do Espetinho';
 
   if (!email || !password) {
     return res.status(400).json({ message: 'Email e senha são obrigatórios' });
