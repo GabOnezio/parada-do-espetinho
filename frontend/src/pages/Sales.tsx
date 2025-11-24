@@ -501,7 +501,6 @@ const SalesPage = () => {
                 {pixQr ? (
                   <div className="flex flex-col items-center gap-2">
                     <img src={pixQr} alt="QR Pix" className="h-40 w-40" />
-                    <code className="block break-words text-[11px] text-slate-600">{pixPayload}</code>
                   </div>
                 ) : (
                   <code className="block break-words text-[11px] text-slate-600">{pixPayload}</code>
@@ -515,9 +514,9 @@ const SalesPage = () => {
       {showPixModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between">
+            <div className="relative flex items-center justify-center">
               <h3 className="text-lg font-semibold text-charcoal">Pagamento PIX</h3>
-              <button className="text-slate-500" onClick={() => setShowPixModal(false)}>
+              <button className="absolute right-0 text-slate-500" onClick={() => setShowPixModal(false)}>
                 ✕
               </button>
             </div>
@@ -527,11 +526,7 @@ const SalesPage = () => {
               ) : (
                 <p className="text-sm text-slate-600">Gerando QR...</p>
               )}
-              {pixPayload && (
-                <code className="block break-words rounded-lg bg-slate-100 p-2 text-center text-[11px] text-slate-600">
-                  {pixPayload}
-                </code>
-              )}
+              <div className="text-2xl font-bold text-primary">R$ {total.total.toFixed(2)}</div>
             </div>
             <div className="mt-4 text-right">
               <button className="btn-primary" onClick={() => setShowPixModal(false)}>
