@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { QrCode, HandCoins, Banknote, BanknoteArrowUp } from 'lucide-react';
 import api from '../api/client';
 
 type Product = {
@@ -232,22 +233,30 @@ const SalesPage = () => {
               </div>
 
               <div className="flex gap-2">
-                {['PIX', 'MONEY', 'CARD_DEBIT', 'CARD_CREDIT'].map((method) => (
+                {[
+                  { key: 'PIX', icon: <QrCode size={18} /> },
+                  { key: 'MONEY', icon: <HandCoins size={18} /> },
+                  { key: 'CARD_DEBIT', icon: <Banknote size={18} /> },
+                  { key: 'CARD_CREDIT', icon: <BanknoteArrowUp size={18} /> }
+                ].map((method) => (
                   <button
-                    key={method}
-                    onClick={() => setPaymentType(method)}
+                    key={method.key}
+                    onClick={() => setPaymentType(method.key)}
                     className={`btn flex-1 text-xs md:text-sm ${
-                      paymentType === method ? 'bg-primary text-white' : 'bg-white text-slate-700 border border-slate-200'
+                      paymentType === method.key ? 'bg-primary text-white' : 'bg-white text-slate-700 border border-slate-200'
                     }`}
                     style={{ minWidth: 0 }}
+                    title={
+                      method.key === 'PIX'
+                        ? 'PIX'
+                        : method.key === 'MONEY'
+                        ? 'DINHEIRO'
+                        : method.key === 'CARD_DEBIT'
+                        ? 'CARTÃO DE DÉBITO'
+                        : 'CARTÃO DE CRÉDITO'
+                    }
                   >
-                    {method === 'MONEY'
-                      ? 'DINHEIRO'
-                      : method === 'CARD_DEBIT'
-                      ? 'CARTÃO DE DÉBITO'
-                      : method === 'CARD_CREDIT'
-                      ? 'CARTÃO DE CRÉDITO'
-                      : 'PIX'}
+                    {method.icon}
                   </button>
                 ))}
               </div>
