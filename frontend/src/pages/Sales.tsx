@@ -240,6 +240,18 @@ const SalesPage = () => {
     );
   }, [products, search]);
 
+  // Se o scanner preenche um GTIN completo, adiciona ao carrinho e limpa o campo
+  useEffect(() => {
+    const code = search.trim();
+    if (!code) return;
+    const matched = products.find((p) => p.gtin === code);
+    if (matched) {
+      addToCart(matched);
+      setSearch('');
+      setShowSuggestions(false);
+    }
+  }, [search, products]);
+
   const bestSellers = useMemo(() => {
     const entries = Object.entries(stats)
       .map(([id, count]) => ({ id, count }))
@@ -302,6 +314,40 @@ const SalesPage = () => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+          <div className="glass-card p-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-charcoal">Itens (visualização rápida)</h2>
+              <span className="text-xs text-slate-500">{cart.length} itens</span>
+            </div>
+            <div className="mt-3 grid max-h-56 grid-cols-1 gap-3 overflow-y-auto">
+              {cart.map((item) => (
+                <div
+                  key={item.product.id}
+                  className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-base font-semibold text-charcoal">{item.product.name}</div>
+                      <div className="text-xs text-slate-500">
+                        GTIN {item.product.gtin} • {item.product.brand}
+                      </div>
+                      <div className="text-sm font-semibold text-primary">
+                        R$ {Number(item.product.price).toFixed(2)} {item.quantity > 1 && `x${item.quantity}`}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeFromCart(item.product.id)}
+                      className="rounded-lg bg-[#b91c1c] px-3 py-2 text-white transition hover:brightness-110"
+                      title="Remover item"
+                    >
+                      <Trash size={18} className="text-black" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {cart.length === 0 && <p className="text-sm text-slate-500">Pesquise ou escaneie para adicionar itens.</p>}
             </div>
           </div>
         </div>
