@@ -21,6 +21,7 @@ const ProductsPage = () => {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState({ name: '', brand: '', gtin: '', price: 0, cost: 0, weight: 0, stock: 0 });
+  const [headerHeight, setHeaderHeight] = useState(0);
   const notifySW = () => {
     if (navigator.serviceWorker?.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'REFRESH_PRODUCTS' });
@@ -47,6 +48,15 @@ const ProductsPage = () => {
 
   useEffect(() => {
     load();
+    const measureHeader = () => {
+      const header = document.querySelector('header');
+      if (header) {
+        setHeaderHeight(header.getBoundingClientRect().height);
+      }
+    };
+    measureHeader();
+    window.addEventListener('resize', measureHeader);
+    return () => window.removeEventListener('resize', measureHeader);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,7 +263,10 @@ const ProductsPage = () => {
         </div>
       </div>
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div
+          className="fixed left-0 right-0 bottom-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          style={{ top: headerHeight }}
+        >
           <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-charcoal">Editar produto</h3>
