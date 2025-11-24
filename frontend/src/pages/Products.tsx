@@ -223,7 +223,7 @@ const ProductsPage = () => {
             <h2 className="text-lg font-semibold text-charcoal">Lista</h2>
             <span className="text-xs text-slate-500">{products.length} itens</span>
           </div>
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-2 max-h-[1000px] overflow-y-auto pr-1">
             {loading && <p className="text-sm text-slate-500">Carregando...</p>}
             {products.map((p) => (
               <div
@@ -246,14 +246,14 @@ const ProductsPage = () => {
                     title="Edite o produto!"
                     onClick={() => startEdit(p)}
                   >
-                    <SquarePen size={16} />
+                    <SquarePen size={20} />
                   </button>
                   <button
                     className="rounded-lg bg-red-100 p-2 text-black hover:bg-red-200"
                     title="Remover produto"
                     onClick={() => handleDelete(p.id)}
                   >
-                    <Trash size={16} />
+                    <Trash size={20} />
                   </button>
                 </div>
               </div>
