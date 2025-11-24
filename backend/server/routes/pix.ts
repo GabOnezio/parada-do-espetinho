@@ -11,35 +11,67 @@ router.get('/keys', requireAuth, async (_req, res) => {
   return res.json(keys);
 });
 
-router.post('/keys', requireAdmin, async (req, res) => {
-  const { type, key, isDefault } = req.body as { type: string; key: string; isDefault?: boolean };
-  if (!type || !key) return res.status(400).json({ message: 'Tipo e chave são obrigatórios' });
+const allowedTypes = ['CNPJ', 'CPF', 'PHONE', 'ALEATORIA', 'EMAIL'];
 
-  const keyPayload = { type, key, isDefault: !!isDefault };
+router.post('/keys', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { type, key, isDefault } = req.body as { type: string; key: string; isDefault?: boolean };
+    const normalizedType = type?.toUpperCase();
 
-  if (isDefault) {
-    await prisma.pixKey.updateMany({ data: { isDefault: false }, where: {} });
+    if (!normalizedType || !key) return res.status(400).json({ message: 'Tipo e chave são obrigatórios' });
+    if (!allowedTypes.includes(normalizedType)) return res.status(400).json({ message: 'Tipo de chave inválido' });
+
+    const existingByType = await prisma.pixKey.findFirst({ where: { type: normalizedType } });
+    const keyPayload = { type: normalizedType, key, isDefault: !!isDefault };
+
+    if (isDefault) {
+      await prisma.pixKey.updateMany({ data: { isDefault: false }, where: {} });
+    }
+
+    let result;
+    if (existingByType) {
+      result = await prisma.pixKey.update({ where: { id: existingByType.id }, data: keyPayload });
+    } else {
+      result = await prisma.pixKey.create({ data: keyPayload });
+    }
+
+    await prisma.auditLog.create({
+      data: { type: 'UPDATE_PIX_KEY', userId: req.user?.id, payload: { type: normalizedType, key } }
+    });
+
+    return res.status(existingByType ? 200 : 201).json(result);
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      return res.status(409).json({ message: 'Chave já cadastrada' });
+    }
+    return res.status(500).json({ message: 'Erro ao salvar chave' });
   }
-
-  const created = await prisma.pixKey.create({ data: keyPayload });
-  await prisma.auditLog.create({
-    data: { type: 'UPDATE_PIX_KEY', userId: req.user?.id, payload: { type, key } }
-  });
-
-  return res.status(201).json(created);
 });
 
-router.post('/keys/:id/default', requireAdmin, async (req, res) => {
-  await prisma.$transaction([
-    prisma.pixKey.updateMany({ data: { isDefault: false }, where: {} }),
-    prisma.pixKey.update({ where: { id: req.params.id }, data: { isDefault: true } })
-  ]);
+router.post('/keys/:id/default', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await prisma.$transaction([
+      prisma.pixKey.updateMany({ data: { isDefault: false }, where: {} }),
+      prisma.pixKey.update({ where: { id: req.params.id }, data: { isDefault: true } })
+    ]);
 
-  await prisma.auditLog.create({
-    data: { type: 'SET_DEFAULT_PIX_KEY', userId: req.user?.id, payload: { keyId: req.params.id } }
-  });
+    await prisma.auditLog.create({
+      data: { type: 'SET_DEFAULT_PIX_KEY', userId: req.user?.id, payload: { keyId: req.params.id } }
+    });
 
-  return res.json({ message: 'Chave padrão atualizada' });
+    return res.json({ message: 'Chave padrão atualizada' });
+  } catch (err) {
+    return res.status(500).json({ message: 'Erro ao definir padrão' });
+  }
+});
+
+router.delete('/keys/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await prisma.pixKey.delete({ where: { id: req.params.id } });
+    return res.json({ message: 'Chave removida' });
+  } catch (err) {
+    return res.status(404).json({ message: 'Chave não encontrada' });
+  }
 });
 
 router.post('/charges', requireAuth, async (req, res) => {

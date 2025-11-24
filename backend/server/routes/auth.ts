@@ -6,10 +6,18 @@ import { prisma } from '../utils/prisma.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/tokens.js';
 import { requireAuth } from '../middlewares/auth.js';
 
+authenticator.options = { window: 1 };
+
 const router = Router();
 
 router.post('/login', async (req, res) => {
-  const { email, password, totp } = req.body as { email: string; password: string; totp?: string };
+  const { email, password, totp, context } = req.body as {
+    email: string;
+    password: string;
+    totp?: string;
+    context?: 'ADMIN' | 'VENDAS';
+  };
+  const issuerLabel = context === 'VENDAS' ? 'Parada do Espetinho Vendas' : 'Parada do Espetinho Adm';
 
   if (!email || !password) {
     return res.status(400).json({ message: 'Email e senha são obrigatórios' });
@@ -25,9 +33,30 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ message: 'Credenciais inválidas' });
   }
 
-  if (user.twoFactorSecret) {
+  // Enforce 2FA: if não há secret, gera um novo e exige confirmação; se já há, valida.
+  if (!user.twoFactorSecret) {
     if (!totp) {
-      return res.status(200).json({ require2fa: true, userId: user.id, message: 'Informe o código 2FA' });
+      const secret = authenticator.generateSecret();
+      await prisma.user.update({ where: { id: user.id }, data: { twoFactorSecret: secret } });
+      const otpauthUrl = authenticator.keyuri(user.email, issuerLabel, secret);
+      return res
+        .status(200)
+        .json({ require2fa: true, userId: user.id, otpauthUrl, message: 'Escaneie o QR Code e informe o código 2FA' });
+    }
+
+    const userWithSecret = await prisma.user.findUnique({ where: { id: user.id } });
+    const isValid = userWithSecret?.twoFactorSecret
+      ? authenticator.verify({ token: totp, secret: userWithSecret.twoFactorSecret })
+      : false;
+    if (!isValid) {
+      return res.status(401).json({ message: 'Código 2FA incorreto' });
+    }
+  } else {
+    if (!totp) {
+      const otpauthUrl = authenticator.keyuri(user.email, issuerLabel, user.twoFactorSecret);
+      return res
+        .status(200)
+        .json({ require2fa: true, userId: user.id, otpauthUrl, message: 'Informe o código 2FA do autenticador' });
     }
 
     const isValid = authenticator.verify({ token: totp, secret: user.twoFactorSecret });

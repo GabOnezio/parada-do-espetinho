@@ -11,7 +11,12 @@ type User = {
 type AuthContextProps = {
   user: User | null;
   loading: boolean;
-  login: (payload: { email: string; password: string; totp?: string }) => Promise<{ require2fa?: boolean; userId?: string } | void>;
+  login: (payload: {
+    email: string;
+    password: string;
+    totp?: string;
+    context?: 'ADMIN' | 'VENDAS';
+  }) => Promise<{ require2fa?: boolean; userId?: string; otpauthUrl?: string } | void>;
   verify2fa: (userId: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -51,7 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login: AuthContextProps['login'] = async ({ email, password, totp }) => {
     const response = await api.post('/auth/login', { email, password, totp });
     if (response.data.require2fa) {
-      return { require2fa: true, userId: response.data.userId };
+      return { require2fa: true, userId: response.data.userId, otpauthUrl: response.data.otpauthUrl };
     }
     const { accessToken, refreshToken, user: userPayload } = response.data;
     setTokens({ accessToken, refreshToken });
@@ -73,6 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     clearTokens();
     setUser(null);
+    window.location.assign('/');
   };
 
   const value = useMemo(
