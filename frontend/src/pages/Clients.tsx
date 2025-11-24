@@ -6,6 +6,7 @@ type Client = {
   name: string;
   email?: string;
   phone?: string;
+  cpf?: string;
   totalSpent: number;
   purchaseCount: number;
 };
@@ -19,7 +20,20 @@ const ClientsPage = () => {
   const load = async (query?: string, limit?: number) => {
     try {
       const res = await api.get('/clients', { params: { q: query, limit: limit || listLimit } });
-      setClients(res.data);
+      const data: Client[] = res.data;
+      if (query && query.trim()) {
+        const q = query.trim().toLowerCase();
+        const score = (c: Client) => {
+          const fields = [c.name, c.email, c.phone, c.cpf].filter(Boolean).map((f) => f!.toLowerCase());
+          if (fields.some((f) => f === q)) return 0;
+          if (fields.some((f) => f.includes(q))) return 1;
+          return 2;
+        };
+        const sorted = [...data].sort((a, b) => score(a) - score(b));
+        setClients(sorted);
+      } else {
+        setClients(data);
+      }
     } catch (err) {
       setClients([]);
     }
