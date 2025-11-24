@@ -147,7 +147,6 @@ const ClientsPage = () => {
           </div>
         </div>
       </div>
-      </div>
       <div className="glass-card p-4">
         <h2 className="text-lg font-semibold text-charcoal">Detalhes</h2>
         {selected ? (
