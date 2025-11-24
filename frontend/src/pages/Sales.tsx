@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { QrCode, HandCoins, Banknote, BanknoteArrowUp } from 'lucide-react';
+import { QrCode, HandCoins, Banknote, BanknoteArrowUp, Trash } from 'lucide-react';
 import api from '../api/client';
 
 type Product = {
@@ -17,6 +17,7 @@ type PixKey = { id: string; type: string; key: string; isDefault: boolean };
 const SalesPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [coupon, setCoupon] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
@@ -65,6 +66,10 @@ const SalesPage = () => {
       }
       return [...prev, { product, quantity: 1 }];
     });
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart((prev) => prev.filter((c) => c.product.id !== productId));
   };
 
   const total = useMemo(() => {
@@ -135,37 +140,40 @@ const SalesPage = () => {
             <div className="flex flex-col">
               <h1 className="text-xl font-bold text-charcoal">PDV (Ponto de Venda)</h1>
             </div>
-            <div className="w-full md:w-[clamp(20rem,35vw,34rem)]">
+            <div className="relative w-full md:w-[clamp(20rem,35vw,34rem)]">
               <label className="text-xs uppercase tracking-wide text-slate-500">Buscar item / GTIN</label>
               <input
                 ref={searchRef}
                 value={search}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Escaneie o código ou digite nome/GTIN"
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
-            </div>
-          </div>
-
-          <div className="glass-card p-4">
-            <h2 className="text-lg font-semibold text-charcoal">Carrinho</h2>
-            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-              {products.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => addToCart(p)}
-                  className="rounded-xl border border-slate-100 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
-                >
-                  <div className="text-sm font-semibold text-charcoal">{p.name}</div>
-                  <div className="text-xs text-slate-500">{p.brand}</div>
-                  {p.isOnPromotion && (
-                    <div className="text-xs font-semibold text-secondary">
-                      Desconto {Number(p.discountPercent || 0).toFixed(0)}%
-                    </div>
+              {showSuggestions && (
+                <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                  {products.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-slate-500">Digite ou escaneie para buscar produtos.</div>
                   )}
-                  <div className="mt-1 text-lg font-bold text-primary">R$ {Number(p.price).toFixed(2)}</div>
-                </button>
-              ))}
+                  {products.map((p) => (
+                    <button
+                      key={p.id}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        addToCart(p);
+                        setSearch('');
+                        setShowSuggestions(false);
+                      }}
+                      className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-primary/5"
+                    >
+                      <span className="text-sm font-semibold text-charcoal">{p.name}</span>
+                      <span className="text-xs text-slate-500">{p.brand}</span>
+                      <span className="text-xs font-semibold text-primary">R$ {Number(p.price).toFixed(2)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -176,29 +184,30 @@ const SalesPage = () => {
               <h2 className="text-lg font-semibold text-charcoal">Carrinho de compra</h2>
               <span className="text-xs text-slate-500">{cart.length} itens</span>
             </div>
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 space-y-2 max-h-56 overflow-y-auto">
               {cart.map((item) => (
-                <div key={item.product.id} className="rounded-xl border border-slate-100 bg-white px-3 py-2">
-                  <div className="flex items-center justify-between text-sm font-semibold text-charcoal">
-                    {item.product.name}
-                    <input
-                      type="number"
-                      min={1}
-                      value={item.quantity}
-                      onChange={(e) =>
-                        setCart((prev) =>
-                          prev.map((c) =>
-                            c.product.id === item.product.id ? { ...c, quantity: Number(e.target.value) } : c
-                          )
-                        )
-                      }
-                      className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-right text-xs"
-                    />
+                <div
+                  key={item.product.id}
+                  className="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
+                >
+                  <div className="flex items-start justify-between gap-2 text-sm font-semibold text-charcoal">
+                    <div className="flex flex-col">
+                      <span>{item.product.name}</span>
+                      <span className="text-xs text-slate-500">
+                        {item.product.brand} • R$ {Number(item.product.price).toFixed(2)} {item.quantity > 1 && `x${item.quantity}`}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => removeFromCart(item.product.id)}
+                      className="rounded-lg bg-[#b91c1c] px-2 py-1 text-white transition hover:brightness-110"
+                      title="Remover item"
+                    >
+                      <Trash size={16} className="text-black" />
+                    </button>
                   </div>
-                  <div className="text-xs text-slate-500">R$ {Number(item.product.price).toFixed(2)} un.</div>
                 </div>
               ))}
-              {cart.length === 0 && <p className="text-sm text-slate-500">Adicione itens clicando nos produtos.</p>}
+              {cart.length === 0 && <p className="text-sm text-slate-500">Pesquise ou escaneie para adicionar itens.</p>}
             </div>
 
             <div className="mt-4 space-y-2 rounded-xl bg-white/80 p-3 text-sm text-slate-700">
