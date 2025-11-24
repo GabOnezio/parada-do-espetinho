@@ -35,10 +35,9 @@ const LoginPage = () => {
       if (result?.require2fa && result.userId) {
         setTwoFactorUserId(result.userId);
         setTwoFactorUri(result.otpauthUrl || null);
-      setHideQr(false);
-    } else {
-      navigate(nextPath);
-    }
+      } else {
+        navigate(nextPath);
+      }
     } catch (err) {
       setError('Credenciais inválidas');
     } finally {
