@@ -19,6 +19,11 @@ const ProductsPage = () => {
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({ name: '', brand: '', gtin: '', price: 0, cost: 0, weight: 0, stock: 0 });
   const [loading, setLoading] = useState(false);
+  const notifySW = () => {
+    if (navigator.serviceWorker?.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'REFRESH_PRODUCTS' });
+    }
+  };
 
   const load = async (query?: string) => {
     setLoading(true);
@@ -50,6 +55,7 @@ const ProductsPage = () => {
       const updated = await api.get('/products', { params: { q: search } });
       setProducts(updated.data);
       localStorage.setItem('productsCache', JSON.stringify(updated.data));
+      notifySW();
     } catch (err) {
       // ignore
     }
@@ -61,6 +67,7 @@ const ProductsPage = () => {
       const updated = products.filter((p) => p.id !== id);
       setProducts(updated);
       localStorage.setItem('productsCache', JSON.stringify(updated));
+      notifySW();
     } catch (err) {
       // ignore
     }

@@ -31,6 +31,24 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'REFRESH_PRODUCTS') {
+    event.waitUntil(
+      caches.open(CACHE_NAME).then((cache) =>
+        fetch('/api/products')
+          .then((response) => {
+            if (response && response.status === 200) {
+              cache.put('/api/products', response.clone());
+            }
+          })
+          .catch(() => {
+            /* ignore */
+          })
+      )
+    );
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
