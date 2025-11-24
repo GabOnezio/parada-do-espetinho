@@ -328,13 +328,31 @@ const SalesPage = () => {
                   className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <div className="flex-1">
                       <div className="text-base font-semibold text-charcoal">{item.product.name}</div>
                       <div className="text-xs text-slate-500">
                         GTIN {item.product.gtin} • {item.product.brand}
                       </div>
-                      <div className="text-sm font-semibold text-primary">
-                        R$ {Number(item.product.price).toFixed(2)} {item.quantity > 1 && `x${item.quantity}`}
+                      <div className="mt-1 flex items-center gap-2">
+                        <div className="text-sm font-semibold text-primary">
+                          R$ {Number(item.product.price).toFixed(2)}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const val = Math.max(1, Number(e.target.value) || 1);
+                              setCart((prev) =>
+                                prev.map((c) =>
+                                  c.product.id === item.product.id ? { ...c, quantity: val } : c
+                                )
+                              );
+                            }}
+                            className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-right text-xs"
+                          />
+                        </div>
                       </div>
                     </div>
                     <button
