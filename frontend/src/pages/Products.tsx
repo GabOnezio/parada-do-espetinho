@@ -15,7 +15,8 @@ import {
   Candy,
   Sparkles,
   ShowerHead,
-  Battery
+  Battery,
+  Flame
 } from 'lucide-react';
 import api from '../api/client';
 
@@ -53,7 +54,8 @@ const categories: Category[] = [
   { key: 'limpeza', label: 'Produtos de Limpeza', description: 'Sabão, detergente, desinfetante', icon: <Sparkles size={16} /> },
   { key: 'higiene', label: 'Higiene Pessoal', description: 'Shampoo, sabonete, pasta de dente', icon: <ShowerHead size={16} /> },
   { key: 'eletronicos', label: 'Eletrônicos', description: 'Cabos, pilhas, lâmpadas', icon: <Battery size={16} /> },
-  { key: 'cafe', label: 'Bebidas Quentes', description: 'Café, chá, achocolatado', icon: <Coffee size={16} /> }
+  { key: 'cafe', label: 'Bebidas Quentes', description: 'Café, chá, achocolatado', icon: <Coffee size={16} /> },
+  { key: 'tabacaria', label: 'Tabacaria & Fumo', description: 'Cigarros, charutos, fumo de corda, rapé, cigarrilhas', icon: <Flame size={16} /> }
 ];
 
 const ProductsPage = () => {
