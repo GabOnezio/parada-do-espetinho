@@ -16,7 +16,30 @@ import {
   Sparkles,
   ShowerHead,
   Battery,
-  Flame
+  Flame,
+  ToyBrick,
+  Puzzle,
+  Gamepad2,
+  User,
+  Dices,
+  Popcorn,
+  Circle,
+  Nut,
+  Carrot,
+  Book,
+  Pencil,
+  Trophy,
+  Shirt,
+  Home,
+  Car,
+  Dog,
+  Baby,
+  Heart,
+  Scissors,
+  Fridge,
+  Smartphone,
+  Chair,
+  Gem
 } from 'lucide-react';
 import api from '../api/client';
 
@@ -55,7 +78,34 @@ const categories: Category[] = [
   { key: 'higiene', label: 'Higiene Pessoal', description: 'Shampoo, sabonete, pasta de dente', icon: <ShowerHead size={16} /> },
   { key: 'eletronicos', label: 'Eletrônicos', description: 'Cabos, pilhas, lâmpadas', icon: <Battery size={16} /> },
   { key: 'cafe', label: 'Bebidas Quentes', description: 'Café, chá, achocolatado', icon: <Coffee size={16} /> },
-  { key: 'tabacaria', label: 'Tabacaria & Fumo', description: 'Cigarros, charutos, fumo de corda, rapé, cigarrilhas', icon: <Flame size={16} /> }
+  { key: 'tabacaria', label: 'Tabacaria & Fumo', description: 'Cigarros, charutos, fumo de corda, rapé, cigarrilhas', icon: <Flame size={16} /> },
+  // Setor Infantil
+  { key: 'brinquedos_infantis', label: 'Brinquedos Infantis', description: 'Bonecas, carrinhos, blocos, pelúcias, quebra-cabeças', icon: <ToyBrick size={16} /> },
+  { key: 'brinquedos_educativos', label: 'Brinquedos Educativos', description: 'Quebra-cabeças, jogos de memória, montar', icon: <Puzzle size={16} /> },
+  { key: 'brinquedos_externos', label: 'Brinquedos Externos', description: 'Bicicletas, patins, bolas, piscinas infantis', icon: <Gamepad2 size={16} /> },
+  { key: 'bonecas_figures', label: 'Bonecas & Action Figures', description: 'Bonecas, action figures, carrinhos de coleção', icon: <User size={16} /> },
+  { key: 'jogos_board', label: 'Jogos & Board Games', description: 'Tabuleiro, cartas, dominó', icon: <Dices size={16} /> },
+  // Salgadinhos & Snacks
+  { key: 'salgadinhos', label: 'Salgadinhos & Snacks', description: 'Doritos, Cheetos, amendoim, biscoitos salgados', icon: <Popcorn size={16} /> },
+  { key: 'salgadinhos_milho', label: 'Salgadinhos de Milho', description: 'Doritos, Fandangos, Torcida, Cheetos', icon: <Circle size={16} /> },
+  { key: 'salgadinhos_batata', label: 'Salgadinhos de Batata', description: 'Ruffles, Pringles, Lays', icon: <Circle size={16} /> },
+  { key: 'amendoins_petiscos', label: 'Amendoins & Petiscos', description: 'Amendoim, pistache, mix de nuts', icon: <Nut size={16} /> },
+  { key: 'snacks_saudaveis', label: 'Snacks Saudáveis', description: 'Chips saudáveis, quinoa, frutas desidratadas', icon: <Carrot size={16} /> },
+  // Organização por setores gerais
+  { key: 'papelaria', label: 'Papelaria', description: 'Cadernos, canetas, lápis, materiais escolares', icon: <Pencil size={16} /> },
+  { key: 'livros_midias', label: 'Livros & Mídias', description: 'Livros, revistas, DVDs, CDs', icon: <Book size={16} /> },
+  { key: 'esportes', label: 'Esportes & Lazer', description: 'Bolas, academia, roupas esportivas', icon: <Trophy size={16} /> },
+  { key: 'moda', label: 'Moda & Vestuário', description: 'Roupas, calçados, acessórios', icon: <Shirt size={16} /> },
+  { key: 'casa_jardim', label: 'Casa & Jardim', description: 'Utensílios, decoração, plantas, ferramentas', icon: <Home size={16} /> },
+  { key: 'automotivo', label: 'Automotivo', description: 'Produtos para carro, óleos, ferramentas', icon: <Car size={16} /> },
+  { key: 'pet', label: 'Pet Shop', description: 'Ração, brinquedos, areia', icon: <Dog size={16} /> },
+  { key: 'bebes', label: 'Bebês & Crianças', description: 'Fraldas, chupetas, mamadeiras, carrinhos', icon: <Baby size={16} /> },
+  { key: 'saude', label: 'Saúde & Farmácia', description: 'Medicamentos, vitaminas, cuidados pessoais', icon: <Heart size={16} /> },
+  { key: 'beleza', label: 'Beleza & Perfumaria', description: 'Cosméticos, perfumes, cabelo', icon: <Scissors size={16} /> },
+  { key: 'eletrodomesticos', label: 'Eletrodomésticos', description: 'Geladeiras, fogões, micro-ondas, aspiradores', icon: <Fridge size={16} /> },
+  { key: 'tecnologia', label: 'Tecnologia', description: 'Celulares, tablets, computadores, acessórios', icon: <Smartphone size={16} /> },
+  { key: 'moveis', label: 'Móveis', description: 'Sofás, mesas, cadeiras, camas', icon: <Chair size={16} /> },
+  { key: 'joias', label: 'Joias & Relógios', description: 'Anéis, colares, pulseiras, relógios', icon: <Gem size={16} /> }
 ];
 
 const ProductsPage = () => {
