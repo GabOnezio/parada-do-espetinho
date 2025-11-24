@@ -5,7 +5,8 @@ import { requireAuth, requireAdmin } from '../middlewares/auth.js';
 const router = Router();
 
 router.get('/', requireAuth, async (req, res) => {
-  const { q } = req.query as Record<string, string>;
+  const { q, limit } = req.query as Record<string, string>;
+  const take = Math.min(Math.max(Number(limit) || 50, 1), 500);
   const clients = await prisma.client.findMany({
     where: q
       ? {
@@ -17,7 +18,8 @@ router.get('/', requireAuth, async (req, res) => {
           ]
         }
       : {},
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    take
   });
   return res.json(clients);
 });

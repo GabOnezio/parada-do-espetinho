@@ -13,13 +13,14 @@ type Client = {
 const ClientsPage = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState('');
+  const [listLimit, setListLimit] = useState(50);
   const [selected, setSelected] = useState<Client | null>(null);
   const [ranking, setRanking] = useState<Client[]>([]);
   const [limit, setLimit] = useState(10);
 
-  const load = async (query?: string) => {
+  const load = async (query?: string, limit?: number) => {
     try {
-      const res = await api.get('/clients', { params: { q: query } });
+      const res = await api.get('/clients', { params: { q: query, limit: limit || listLimit } });
       setClients(res.data);
     } catch (err) {
       setClients([]);
@@ -64,6 +65,24 @@ const ClientsPage = () => {
             Buscar
           </button>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold text-charcoal">Filtro de lista</span>
+          <span className="text-xs text-slate-600">limite {listLimit}</span>
+        </div>
+        <input
+          type="range"
+          min={5}
+          max={500}
+          value={listLimit}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setListLimit(v);
+            load(search, v);
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
