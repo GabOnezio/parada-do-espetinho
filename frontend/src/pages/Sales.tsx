@@ -24,6 +24,7 @@ const SalesPage = () => {
   const [selectedPixKey, setSelectedPixKey] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [pixPayload, setPixPayload] = useState('');
+  const [pixQr, setPixQr] = useState('');
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -84,6 +85,7 @@ const SalesPage = () => {
   const finalize = async () => {
     try {
       setPixPayload('');
+      setPixQr('');
       if (paymentType === 'PIX') {
         if (!selectedPixKey) {
           setMessage('Selecione uma forma de pagamento Pix');
@@ -101,6 +103,9 @@ const SalesPage = () => {
           description: 'Venda PDV'
         });
         setPixPayload(chargeRes.data.qrCodePayload);
+        setPixQr(
+          `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(chargeRes.data.qrCodePayload)}&size=320x320`
+        );
         setMessage('PIX gerado. Escaneie o QR Code para pagar.');
       } else {
         await api.post('/sales', {
@@ -268,12 +273,19 @@ const SalesPage = () => {
                 {paymentType === 'PIX' ? 'Gerar PIX' : 'Finalizar venda'}
               </button>
               {message && <p className="text-xs text-slate-500">{message}</p>}
-              {pixPayload && (
-                <div className="mt-2 rounded-xl bg-white p-3 text-xs text-slate-700">
-                  <p className="font-semibold text-charcoal">Payload do QR Code</p>
+            {pixPayload && (
+              <div className="mt-2 rounded-xl bg-white p-3 text-xs text-slate-700">
+                <p className="font-semibold text-charcoal">QR Code do PIX</p>
+                {pixQr ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <img src={pixQr} alt="QR Pix" className="h-40 w-40" />
+                    <code className="block break-words text-[11px] text-slate-600">{pixPayload}</code>
+                  </div>
+                ) : (
                   <code className="block break-words text-[11px] text-slate-600">{pixPayload}</code>
-                </div>
-              )}
+                )}
+              </div>
+            )}
             </div>
           </div>
         </div>

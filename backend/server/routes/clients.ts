@@ -22,10 +22,12 @@ router.get('/', requireAuth, async (req, res) => {
   return res.json(clients);
 });
 
-router.get('/ranking', requireAuth, async (_req, res) => {
+router.get('/ranking', requireAuth, async (req, res) => {
+  const { limit } = req.query as Record<string, string>;
+  const take = Math.min(Math.max(Number(limit) || 10, 1), 12000);
   const clients = await prisma.client.findMany({
     orderBy: { totalSpent: 'desc' },
-    take: 10
+    take
   });
   return res.json(clients);
 });

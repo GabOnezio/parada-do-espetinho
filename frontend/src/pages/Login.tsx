@@ -105,7 +105,7 @@ const LoginPage = () => {
           </form>
         ) : (
           <form onSubmit={handleVerify2fa} className="space-y-4">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 text-center">
               {hideQr ? 'Digite o código do Authenticator.' : 'Escaneie o QR Code no Authenticator e informe o código 2FA.'}
             </p>
             {twoFactorUri && !hideQr && (

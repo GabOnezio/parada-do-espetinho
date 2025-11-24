@@ -1,9 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const SalesLayout = ({ children }: { children: React.ReactNode }) => {
   const { logout, user } = useAuth();
+  const location = useLocation();
+  const isVendas = location.pathname.startsWith('/vendas') || location.pathname.startsWith('/cliente');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sand via-white to-secondary/10">
@@ -18,7 +20,12 @@ export const SalesLayout = ({ children }: { children: React.ReactNode }) => {
               <div className="text-lg -mt-1 font-extrabold text-primary">Espetinho</div>
             </div>
           </Link>
-          <div className="flex items-center gap-3 text-sm text-slate-700">
+          <div className="flex items-center gap-4 text-sm text-slate-700">
+            {isVendas && (
+              <Link to="/cliente" className="rounded-lg px-3 py-2 text-primary hover:bg-primary/10">
+                Cliente
+              </Link>
+            )}
             <span className="hidden sm:block">{user?.name || 'Equipe de Vendas'}</span>
             <button onClick={logout} className="btn-ghost">
               Sair

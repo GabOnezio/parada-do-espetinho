@@ -11,6 +11,7 @@ import PixPage from './pages/Pix';
 import AnalyticsPage from './pages/Analytics';
 import EmployeesPage from './pages/Employees';
 import LandingPage from './pages/Landing';
+import ClientRegisterPage from './pages/ClientRegister';
 import { AppLayout } from './components/Layout';
 import { SalesLayout } from './components/SalesLayout';
 
@@ -52,6 +53,14 @@ const App = () => {
               <SalesLayout>
                 <SalesPage />
               </SalesLayout>
+            </Protected>
+          }
+        />
+        <Route
+          path="/cliente"
+          element={
+            <Protected>
+              <ClientRegisterPage />
             </Protected>
           }
         />
