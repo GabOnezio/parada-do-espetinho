@@ -19,13 +19,6 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const panelContext = nextPath.startsWith('/vendas') ? 'VENDAS' : 'ADMIN';
 
-  useEffect(() => {
-    if (twoFactorUri) {
-      const timer = setTimeout(() => setHideQr(true), 15000);
-      return () => clearTimeout(timer);
-    }
-  }, [twoFactorUri]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -54,6 +47,9 @@ const LoginPage = () => {
     setError('');
     try {
       await verify2fa(twoFactorUserId, twoFactorCode);
+      if (email) {
+        localStorage.setItem(`hideQr:${email.toLowerCase()}`, '1');
+      }
       navigate(nextPath);
     } catch (err) {
       setError('Código 2FA incorreto');
@@ -109,7 +105,9 @@ const LoginPage = () => {
           </form>
         ) : (
           <form onSubmit={handleVerify2fa} className="space-y-4">
-            <p className="text-sm text-slate-600">Escaneie o QR Code no Authenticator e informe o código 2FA.</p>
+            <p className="text-sm text-slate-600">
+              {hideQr ? 'Digite o código do Authenticator.' : 'Escaneie o QR Code no Authenticator e informe o código 2FA.'}
+            </p>
             {twoFactorUri && !hideQr && (
               <div className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white/70 p-4">
                 <img
@@ -117,18 +115,6 @@ const LoginPage = () => {
                   src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(twoFactorUri)}&size=320x320`}
                   className="h-80 w-80"
                 />
-                <button
-                  type="button"
-                  className="text-xs text-primary underline"
-                  onClick={() => {
-                    setHideQr(true);
-                    if (email) {
-                      localStorage.setItem(`hideQr:${email.toLowerCase()}`, '1');
-                    }
-                  }}
-                >
-                  Já escaneei, ocultar QR
-                </button>
               </div>
             )}
             <input
