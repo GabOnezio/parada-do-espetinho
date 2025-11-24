@@ -22,8 +22,14 @@ const ProductsPage = () => {
     try {
       const res = await api.get('/products', { params: { q: query } });
       setProducts(res.data);
+      localStorage.setItem('productsCache', JSON.stringify(res.data));
     } catch (err) {
-      setProducts([]);
+      const cached = localStorage.getItem('productsCache');
+      if (cached) {
+        setProducts(JSON.parse(cached));
+      } else {
+        setProducts([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -38,7 +44,9 @@ const ProductsPage = () => {
     try {
       await api.post('/products', form);
       setForm({ name: '', brand: '', gtin: '', price: 0, stock: 0 });
-      load(search);
+      const updated = await api.get('/products', { params: { q: search } });
+      setProducts(updated.data);
+      localStorage.setItem('productsCache', JSON.stringify(updated.data));
     } catch (err) {
       // ignore
     }
@@ -91,21 +99,34 @@ const ProductsPage = () => {
               required
             />
             <div className="flex gap-2">
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Preço"
-                value={form.price}
-                onChange={(e) => setForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                className="w-1/2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
-              <input
-                type="number"
-                placeholder="Estoque"
-                value={form.stock}
-                onChange={(e) => setForm((prev) => ({ ...prev, stock: Number(e.target.value) }))}
-                className="w-1/2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
+              <div className="w-1/2">
+                <label className="text-xs uppercase tracking-wide text-slate-500">Valor do produto</label>
+                <div className="relative mt-1">
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={form.price}
+                    onChange={(e) => setForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
+                </div>
+              </div>
+              <div className="w-1/2">
+                <label className="text-xs uppercase tracking-wide text-slate-500">Taxa individual</label>
+                <div className="relative mt-1">
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={form.stock}
+                    onChange={(e) => setForm((prev) => ({ ...prev, stock: Number(e.target.value) }))}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
+                </div>
+              </div>
             </div>
             <button type="submit" className="btn-primary w-full">
               Salvar
