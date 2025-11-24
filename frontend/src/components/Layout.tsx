@@ -24,7 +24,7 @@ export const AppLayout = () => {
             <img
               src="/logo/Parada%20do%20Espetinho%20sem%20o%20bra%C3%A7o%20com%20moldura.png"
               alt="Parada do Espetinho"
-              className="h-12 w-12 rounded-xl object-contain shadow-lg ring-1 ring-black/5"
+              className="h-12 w-12 object-contain"
               loading="lazy"
             />
             <div>
