@@ -36,7 +36,7 @@ import {
   Baby,
   Heart,
   Scissors,
-  Fridge,
+  Refrigerator,
   Smartphone,
   Armchair,
   Gem
@@ -102,7 +102,7 @@ const categories: Category[] = [
   { key: 'bebes', label: 'Bebês & Crianças', description: 'Fraldas, chupetas, mamadeiras, carrinhos', icon: <Baby size={16} /> },
   { key: 'saude', label: 'Saúde & Farmácia', description: 'Medicamentos, vitaminas, cuidados pessoais', icon: <Heart size={16} /> },
   { key: 'beleza', label: 'Beleza & Perfumaria', description: 'Cosméticos, perfumes, cabelo', icon: <Scissors size={16} /> },
-  { key: 'eletrodomesticos', label: 'Eletrodomésticos', description: 'Geladeiras, fogões, micro-ondas, aspiradores', icon: <Fridge size={16} /> },
+  { key: 'eletrodomesticos', label: 'Eletrodomésticos', description: 'Geladeiras, fogões, micro-ondas, aspiradores', icon: <Refrigerator size={16} /> },
   { key: 'tecnologia', label: 'Tecnologia', description: 'Celulares, tablets, computadores, acessórios', icon: <Smartphone size={16} /> },
   { key: 'moveis', label: 'Móveis', description: 'Sofás, mesas, cadeiras, camas', icon: <Armchair size={16} /> },
   { key: 'joias', label: 'Joias & Relógios', description: 'Anéis, colares, pulseiras, relógios', icon: <Gem size={16} /> }
