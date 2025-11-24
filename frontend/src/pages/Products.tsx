@@ -115,7 +115,7 @@ const ProductsPage = () => {
           <span className="text-slate-500">▾</span>
         </button>
         {open && (
-          <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-b-xl border border-slate-200 bg-white shadow-lg">
+          <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-b-xl border border-slate-200 bg-white shadow-lg">
             {categories.map((c) => (
               <button
                 key={c.key}
