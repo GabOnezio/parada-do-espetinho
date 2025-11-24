@@ -31,9 +31,11 @@ const LandingPage = () => {
       )}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6">
         <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-lg shadow-lg">
-            🍢
-          </div>
+          <img
+            src="/logo/Parada%20do%20Espetinho%20sem%20o%20bra%C3%A7o%20com%20moldura.png"
+            alt="Parada do Espetinho"
+            className="h-12 w-12 rounded-xl object-contain shadow-lg ring-1 ring-black/5"
+          />
           <div>
             <div className="text-xs uppercase tracking-widest text-slate-500">Parada do</div>
             <div className="text-xl font-extrabold text-primary">Espetinho</div>

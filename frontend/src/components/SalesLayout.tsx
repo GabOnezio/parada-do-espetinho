@@ -12,9 +12,12 @@ export const SalesLayout = ({ children }: { children: React.ReactNode }) => {
       <header className="sticky top-0 z-20 border-b border-white/50 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2 font-bold text-charcoal">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-white shadow-lg">
-              🍢
-            </div>
+            <img
+              src="/logo/Parada%20do%20Espetinho%20sem%20o%20bra%C3%A7o%20com%20moldura.png"
+              alt="Parada do Espetinho"
+              className="h-12 w-12 rounded-xl object-contain shadow-lg ring-1 ring-black/5"
+              loading="lazy"
+            />
             <div>
               <div className="text-xs uppercase tracking-widest text-slate-500">Parada do</div>
               <div className="text-lg -mt-1 font-extrabold text-primary">Espetinho</div>
