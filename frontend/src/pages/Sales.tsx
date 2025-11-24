@@ -129,14 +129,14 @@ const SalesPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex flex-col">
               <p className="text-sm text-slate-500">Vendas</p>
               <h1 className="text-xl font-bold text-charcoal">PDV</h1>
             </div>
-            <div className="w-full md:w-96">
+            <div className="w-full md:w-[clamp(20rem,35vw,34rem)]">
               <label className="text-xs uppercase tracking-wide text-slate-500">Buscar item / GTIN</label>
               <input
                 ref={searchRef}
