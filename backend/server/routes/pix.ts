@@ -125,13 +125,24 @@ router.post('/webhook', async (req, res) => {
   const { txId, status } = req.body as { txId: string; status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED' };
   if (!txId || !status) return res.status(400).json({ message: 'txId e status são obrigatórios' });
 
-  const charge = await prisma.pixCharge.findUnique({ where: { txId } });
+  const charge = await prisma.pixCharge.findUnique({ where: { txId }, include: { sale: true } });
   if (!charge) return res.status(404).json({ message: 'Cobrança não encontrada' });
 
   await prisma.pixCharge.update({ where: { txId }, data: { status } });
 
   if (charge.saleId && status === 'PAID') {
     await prisma.sale.update({ where: { id: charge.saleId }, data: { status: 'COMPLETED' } });
+
+    // Credita pontos/total para o cliente, se existir na venda
+    if (charge.sale?.clientId) {
+      await prisma.client.update({
+        where: { id: charge.sale.clientId },
+        data: {
+          totalSpent: { increment: charge.amount },
+          purchaseCount: { increment: 1 }
+        }
+      });
+    }
   }
 
   return res.json({ message: 'Webhook processado' });
@@ -144,6 +155,12 @@ router.get('/charges', requireAuth, async (_req, res) => {
     take: 50
   });
   return res.json(charges);
+});
+
+router.get('/charges/:txId/status', requireAuth, async (req, res) => {
+  const charge = await prisma.pixCharge.findUnique({ where: { txId: req.params.txId } });
+  if (!charge) return res.status(404).json({ message: 'Cobrança não encontrada' });
+  return res.json({ status: charge.status, amount: charge.amount, saleId: charge.saleId });
 });
 
 export default router;

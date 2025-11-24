@@ -129,6 +129,7 @@ const SalesPage = () => {
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'paid'>('idle');
   const [lastReceipt, setLastReceipt] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
   const [pendingPixSale, setPendingPixSale] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
+  const [pendingTx, setPendingTx] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -223,6 +224,33 @@ const SalesPage = () => {
     loadKeys();
   }, []);
 
+  // Poll de status do PIX
+  useEffect(() => {
+    if (!pendingTx || paymentStatus === 'paid') return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.get(`/pix/charges/${pendingTx}/status`);
+        if (res.data.status === 'PAID') {
+          setPaymentStatus('paid');
+          setTimeout(() => {
+            setShowPixModal(false);
+            if (pendingPixSale) {
+              setLastReceipt(pendingPixSale);
+              setCart([]);
+              setAppliedCoupon(null);
+              setCoupon('');
+              setPendingPixSale(null);
+              setPendingTx(null);
+            }
+          }, 900);
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [pendingTx, paymentStatus, pendingPixSale]);
+
   useEffect(() => {
     searchRef.current?.focus();
   }, []);
@@ -286,6 +314,7 @@ const SalesPage = () => {
           description: 'Venda PDV'
         });
         setPixPayload(chargeRes.data.qrCodePayload);
+        setPendingTx(chargeRes.data.charge?.txId || chargeRes.data.charge?.id || null);
         setPixQr(
           `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(chargeRes.data.qrCodePayload)}&size=320x320`
         );
