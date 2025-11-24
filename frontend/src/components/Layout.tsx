@@ -18,7 +18,7 @@ export const AppLayout = () => {
 
   return (
     <div className="min-h-screen text-slate-800">
-      <header className="fixed top-0 z-20 w-full border-b border-white/20 bg-white/70 backdrop-blur-lg">
+      <header className="fixed top-0 z-50 w-full border-b border-white/20 bg-white/70 backdrop-blur-lg">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2 font-bold text-charcoal">
             <img

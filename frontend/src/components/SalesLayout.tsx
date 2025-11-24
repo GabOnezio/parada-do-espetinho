@@ -9,7 +9,7 @@ export const SalesLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sand via-white to-secondary/10">
-      <header className="sticky top-0 z-20 border-b border-white/50 bg-white/80 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-white/50 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2 font-bold text-charcoal">
             <img
