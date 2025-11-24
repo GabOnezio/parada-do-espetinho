@@ -39,7 +39,8 @@ import {
   Refrigerator,
   Smartphone,
   Armchair,
-  Gem
+  Gem,
+  Cookie
 } from 'lucide-react';
 import api from '../api/client';
 
@@ -102,7 +103,8 @@ const categoryColors: Record<string, string> = {
   eletrodomesticos: '#06b6d4',
   tecnologia: '#0ea5e9',
   moveis: '#c084fc',
-  joias: '#fbbf24'
+  joias: '#fbbf24',
+  bolachas: '#fb923c'
 };
 
 const categories: Category[] = [
@@ -147,7 +149,8 @@ const categories: Category[] = [
   { key: 'eletrodomesticos', label: 'Eletrodomésticos', description: 'Geladeiras, fogões, micro-ondas, aspiradores', icon: <Refrigerator size={16} /> },
   { key: 'tecnologia', label: 'Tecnologia', description: 'Celulares, tablets, computadores, acessórios', icon: <Smartphone size={16} /> },
   { key: 'moveis', label: 'Móveis', description: 'Sofás, mesas, cadeiras, camas', icon: <Armchair size={16} /> },
-  { key: 'joias', label: 'Joias & Relógios', description: 'Anéis, colares, pulseiras, relógios', icon: <Gem size={16} /> }
+  { key: 'joias', label: 'Joias & Relógios', description: 'Anéis, colares, pulseiras, relógios', icon: <Gem size={16} /> },
+  { key: 'bolachas', label: 'Bolachas & Cookies', description: 'Cookies, biscoitos doces, recheados', icon: <Cookie size={16} /> }
 ];
 
 const ProductsPage = () => {
