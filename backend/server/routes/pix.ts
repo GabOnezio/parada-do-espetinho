@@ -9,6 +9,14 @@ const router = Router();
 // Utilitários para gerar payload BR Code válido (Pix)
 const tlv = (id: string, value: string) => `${id}${value.length.toString().padStart(2, '0')}${value}`;
 
+const sanitize = (text: string, max: number) =>
+  text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9 \-\.]/g, '')
+    .toUpperCase()
+    .slice(0, max);
+
 function crc16(payload: string) {
   let crc = 0xffff;
   for (let i = 0; i < payload.length; i++) {
@@ -42,7 +50,7 @@ function buildPixPayload({
 }) {
   const gui = tlv('00', 'BR.GOV.BCB.PIX');
   const keyField = tlv('01', key);
-  const descField = description ? tlv('02', description.slice(0, 50)) : '';
+  const descField = description ? tlv('02', sanitize(description, 50)) : '';
   const merchantAccountInfo = tlv('26', `${gui}${keyField}${descField}`);
 
   const payloadFormatIndicator = tlv('00', '01');
@@ -51,9 +59,9 @@ function buildPixPayload({
   const transactionCurrency = tlv('53', '986');
   const transactionAmount = tlv('54', Number(amount).toFixed(2));
   const countryCode = tlv('58', 'BR');
-  const nameField = tlv('59', merchantName.slice(0, 25));
-  const cityField = tlv('60', merchantCity.slice(0, 15) || 'BRASILIA');
-  const addDataField = tlv('62', tlv('05', txId.slice(0, 25)));
+  const nameField = tlv('59', sanitize(merchantName, 25) || 'PARADA DO ESPETINHO');
+  const cityField = tlv('60', sanitize(merchantCity, 15) || 'BRASILIA');
+  const addDataField = tlv('62', tlv('05', sanitize(txId, 25)));
 
   const withoutCrc =
     payloadFormatIndicator +
