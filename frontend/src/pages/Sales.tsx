@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { QrCode, HandCoins, Banknote, BanknoteArrowUp, Trash } from 'lucide-react';
 import api from '../api/client';
+import { addLocalSale, getProducts, saveProducts } from '../utils/idb';
 
 type Product = {
   id: string;
@@ -14,7 +15,7 @@ type Product = {
 type CartItem = { product: Product; quantity: number };
 type PixKey = { id: string; type: string; key: string; isDefault: boolean };
 
-const PRODUCTS_CACHE_KEY = 'pdv-products-cache';
+const PRODUCTS_CACHE_KEY = 'pdv-products-cache'; // mantém compat localStorage
 const SALES_STATS_KEY = 'pdv-sales-stats';
 
 const SalesPage = () => {
@@ -35,9 +36,18 @@ const SalesPage = () => {
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    // Primeiro tenta cache local
+    // Primeiro tenta IDB
+    (async () => {
+      try {
+        const local = await getProducts();
+        if (local?.length) setProducts(local);
+      } catch {
+        /* ignore */
+      }
+    })();
+    // Em seguida, legacy cache localStorage
     const cached = localStorage.getItem(PRODUCTS_CACHE_KEY);
-    if (cached) {
+    if (cached && !products.length) {
       try {
         const parsed = JSON.parse(cached);
         setProducts(parsed);
@@ -45,12 +55,13 @@ const SalesPage = () => {
         /* ignore */
       }
     }
-    // Depois busca remoto e atualiza cache
+    // Depois busca remoto e atualiza caches
     const loadRemote = async () => {
       try {
         const res = await api.get('/products');
         setProducts(res.data);
         localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(res.data));
+        await saveProducts(res.data);
         setLoadedRemote(true);
       } catch {
         setLoadedRemote(false);
@@ -155,6 +166,16 @@ const SalesPage = () => {
         stats[c.product.id] = (stats[c.product.id] || 0) + c.quantity;
       });
       localStorage.setItem(SALES_STATS_KEY, JSON.stringify(stats));
+      // Guarda venda local (para futuro sync/analytics)
+      const saleTotal = total.total;
+      const saleId = crypto.randomUUID();
+      await addLocalSale({
+        id: saleId,
+        items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+        total: saleTotal,
+        paymentType,
+        createdAt: Date.now()
+      });
     } catch (err) {
       setMessage('Erro ao registrar venda');
     }

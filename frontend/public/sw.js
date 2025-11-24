@@ -1,4 +1,4 @@
-const CACHE_NAME = 'parada-espetinho-v3';
+const CACHE_NAME = 'parada-espetinho-v4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -44,14 +44,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (request.url.includes('/api/')) {
-    // Network-first para API
+  if (request.url.includes('/api/products') && request.method === 'GET') {
+    // Cache-first com fallback rede para produtos (mantém mais ágil a busca local)
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          return response;
-        })
-        .catch(() => caches.match(request))
+      caches.match(request).then((cached) => {
+        const fetchPromise = fetch(request)
+          .then((response) => {
+            if (response && response.status === 200) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            }
+            return response;
+          })
+          .catch(() => cached);
+        return cached || fetchPromise;
+      })
     );
     return;
   }
