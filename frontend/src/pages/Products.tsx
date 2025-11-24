@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Trash } from 'lucide-react';
+import { Trash, SquarePen } from 'lucide-react';
 import api from '../api/client';
 
 type Product = {
@@ -19,6 +19,8 @@ const ProductsPage = () => {
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({ name: '', brand: '', gtin: '', price: 0, cost: 0, weight: 0, stock: 0 });
   const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', brand: '', gtin: '', price: 0, cost: 0, weight: 0, stock: 0 });
   const notifySW = () => {
     if (navigator.serviceWorker?.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'REFRESH_PRODUCTS' });
@@ -68,6 +70,34 @@ const ProductsPage = () => {
       setProducts(updated);
       localStorage.setItem('productsCache', JSON.stringify(updated));
       notifySW();
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const startEdit = (p: Product) => {
+    setEditing(p);
+    setEditForm({
+      name: p.name,
+      brand: p.brand,
+      gtin: p.gtin,
+      price: p.price,
+      cost: p.cost || 0,
+      weight: p.weight || 0,
+      stock: p.stock
+    });
+  };
+
+  const submitEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editing) return;
+    try {
+      await api.put(`/products/${editing.id}`, editForm);
+      const updated = await api.get('/products', { params: { q: search } });
+      setProducts(updated.data);
+      localStorage.setItem('productsCache', JSON.stringify(updated.data));
+      notifySW();
+      setEditing(null);
     } catch (err) {
       // ignore
     }
@@ -202,6 +232,13 @@ const ProductsPage = () => {
                     <div className="text-xs text-slate-500">Estoque {p.stock}</div>
                   </div>
                   <button
+                    className="rounded-lg bg-green-100 p-2 text-black hover:bg-green-200"
+                    title="Edite o produto!"
+                    onClick={() => startEdit(p)}
+                  >
+                    <SquarePen size={16} />
+                  </button>
+                  <button
                     className="rounded-lg bg-red-100 p-2 text-black hover:bg-red-200"
                     title="Remover produto"
                     onClick={() => handleDelete(p.id)}
@@ -216,6 +253,103 @@ const ProductsPage = () => {
         </div>
       </div>
     </div>
+
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-charcoal">Editar produto</h3>
+              <button onClick={() => setEditing(null)} className="text-slate-500 hover:text-slate-700">
+                ✕
+              </button>
+            </div>
+            <form className="mt-4 space-y-3" onSubmit={submitEdit}>
+              <input
+                placeholder="GTIN"
+                value={editForm.gtin}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, gtin: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                required
+              />
+              <input
+                placeholder="NOME"
+                value={editForm.name}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                required
+              />
+              <input
+                placeholder="MARCA"
+                value={editForm.brand}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, brand: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                required
+              />
+              <div className="flex gap-2">
+                <div className="w-1/2">
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Valor do produto</label>
+                  <div className="relative mt-1">
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      value={editForm.price}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                    />
+                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
+                  </div>
+                </div>
+                <div className="w-1/2">
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Taxa individual</label>
+                  <div className="relative mt-1">
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      value={editForm.cost}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, cost: Number(e.target.value) }))}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                    />
+                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="w-1/2">
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Peso (kg)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={editForm.weight}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, weight: Number(e.target.value) }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div className="w-1/2">
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Estoque</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={editForm.stock}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, stock: Number(e.target.value) }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button type="button" onClick={() => setEditing(null)} className="btn-ghost">
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary">
+                  Salvar alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
   );
 };
 

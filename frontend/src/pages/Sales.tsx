@@ -11,6 +11,7 @@ type Product = {
   brand: string;
   discountPercent?: number;
   isOnPromotion?: boolean;
+  cost?: number;
 };
 type CartItem = { product: Product; quantity: number };
 type PixKey = { id: string; type: string; key: string; isDefault: boolean };
@@ -141,8 +142,9 @@ const SalesPage = () => {
 
   const total = useMemo(() => {
     const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    const fees = cart.reduce((sum, item) => sum + (item.product.cost || 0) * item.quantity, 0);
     const discount = appliedCoupon ? subtotal * (appliedCoupon.discountPercent / 100) : 0;
-    return { subtotal, discount, total: subtotal - discount };
+    return { subtotal, fees, discount, total: subtotal + fees - discount };
   }, [cart, appliedCoupon]);
 
   const applyCoupon = async () => {
@@ -333,9 +335,12 @@ const SalesPage = () => {
                       <div className="text-xs text-slate-500">
                         GTIN {item.product.gtin} • {item.product.brand}
                       </div>
-                      <div className="mt-1 flex items-center gap-2">
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
                         <div className="text-sm font-semibold text-primary">
                           R$ {Number(item.product.price).toFixed(2)}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          Taxa individual: R$ {Number(item.product.cost || 0).toFixed(2)}
                         </div>
                         <div className="flex items-center gap-1">
                           <input
@@ -388,6 +393,11 @@ const SalesPage = () => {
                       <span className="text-xs text-slate-500">
                         {item.product.brand} • R$ {Number(item.product.price).toFixed(2)} {item.quantity > 1 && `x${item.quantity}`}
                       </span>
+                      {item.product.cost ? (
+                        <span className="text-[11px] text-slate-500">
+                          Taxa individual: R$ {Number(item.product.cost).toFixed(2)}
+                        </span>
+                      ) : null}
                     </div>
                     <button
                       onClick={() => removeFromCart(item.product.id)}
