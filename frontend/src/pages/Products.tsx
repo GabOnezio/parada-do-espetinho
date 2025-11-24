@@ -8,9 +8,9 @@ import {
   Drumstick,
   Croissant,
   Snowflake,
-  CupSoda,
   GlassWater,
-  Can,
+  Package,
+  Coffee,
   ChefHat,
   Candy,
   Sparkles,
@@ -46,14 +46,14 @@ const categories: Category[] = [
   { key: 'carnes', label: 'Carnes & Peixes', description: 'Bovina, frango, peixes, suína', icon: <Drumstick size={16} /> },
   { key: 'paes', label: 'Pães & Panificação', description: 'Pães, biscoitos, panificados', icon: <Croissant size={16} /> },
   { key: 'congelados', label: 'Alimentos Congelados', description: 'Pizza, lasanha, hambúrguer, vegetais', icon: <Snowflake size={16} /> },
-  { key: 'bebidas', label: 'Bebidas', description: 'Água, sucos, refrigerantes, cervejas, vinhos', icon: <CupSoda size={16} /> },
-  { key: 'processados', label: 'Alimentos Processados', description: 'Enlatados, extratos, geleias', icon: <Can size={16} /> },
+  { key: 'bebidas', label: 'Bebidas', description: 'Água, sucos, refrigerantes, cervejas, vinhos', icon: <GlassWater size={16} /> },
+  { key: 'processados', label: 'Alimentos Processados', description: 'Enlatados, extratos, geleias', icon: <Package size={16} /> },
   { key: 'ingredientes', label: 'Ingredientes Culinários', description: 'Azeite, óleos, sal, açúcar, vinagre', icon: <ChefHat size={16} /> },
   { key: 'ultraprocessados', label: 'Ultraprocessados', description: 'Biscoitos recheados, salgadinhos, instantâneos', icon: <Candy size={16} /> },
   { key: 'limpeza', label: 'Produtos de Limpeza', description: 'Sabão, detergente, desinfetante', icon: <Sparkles size={16} /> },
   { key: 'higiene', label: 'Higiene Pessoal', description: 'Shampoo, sabonete, pasta de dente', icon: <ShowerHead size={16} /> },
   { key: 'eletronicos', label: 'Eletrônicos', description: 'Cabos, pilhas, lâmpadas', icon: <Battery size={16} /> },
-  { key: 'cafe', label: 'Bebidas Quentes', description: 'Café, chá, achocolatado', icon: <GlassWater size={16} /> }
+  { key: 'cafe', label: 'Bebidas Quentes', description: 'Café, chá, achocolatado', icon: <Coffee size={16} /> }
 ];
 
 const ProductsPage = () => {
