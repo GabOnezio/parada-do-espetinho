@@ -5,6 +5,7 @@ const DB_VERSION = 1;
 const STORE_PRODUCTS = 'products';
 const STORE_SALES = 'sales';
 const STORE_CLIENTS = 'clients';
+const STORE_PENDING = 'pendingSales';
 
 type Product = {
   id: string;
@@ -45,8 +46,11 @@ function openDB(): Promise<IDBDatabase> {
     if (!db.objectStoreNames.contains(STORE_SALES)) {
       db.createObjectStore(STORE_SALES, { keyPath: 'id' });
     }
-    if (!db.objectStoreNames.contains(STORE_CLIENTS)) {
+  if (!db.objectStoreNames.contains(STORE_CLIENTS)) {
       db.createObjectStore(STORE_CLIENTS, { keyPath: 'id' });
+    }
+    if (!db.objectStoreNames.contains(STORE_PENDING)) {
+      db.createObjectStore(STORE_PENDING, { keyPath: 'id' });
     }
   };
     req.onsuccess = () => resolve(req.result);
@@ -96,6 +100,31 @@ export async function clearLocalSales() {
   const db = await openDB();
   const tx = db.transaction(STORE_SALES, 'readwrite');
   tx.objectStore(STORE_SALES).clear();
+  return tx.complete;
+}
+
+export async function addPendingSale(sale: LocalSale) {
+  const db = await openDB();
+  const tx = db.transaction(STORE_PENDING, 'readwrite');
+  tx.objectStore(STORE_PENDING).put(sale);
+  return tx.complete;
+}
+
+export async function getPendingSales(): Promise<LocalSale[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_PENDING, 'readonly');
+    const store = tx.objectStore(STORE_PENDING);
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result as LocalSale[]);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function removePendingSale(id: string) {
+  const db = await openDB();
+  const tx = db.transaction(STORE_PENDING, 'readwrite');
+  tx.objectStore(STORE_PENDING).delete(id);
   return tx.complete;
 }
 

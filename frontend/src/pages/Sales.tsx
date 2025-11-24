@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { QrCode, HandCoins, Banknote, BanknoteArrowUp, Trash } from 'lucide-react';
 import api from '../api/client';
-import { addLocalSale, getProducts, saveProducts } from '../utils/idb';
+import { addLocalSale, addPendingSale, getPendingSales, getProducts, removePendingSale, saveProducts } from '../utils/idb';
 
 type Product = {
   id: string;
@@ -68,6 +68,34 @@ const SalesPage = () => {
       }
     };
     loadRemote();
+  }, []);
+
+  useEffect(() => {
+    // tenta sincronizar vendas pendentes quando volta online
+    const sync = async () => {
+      if (!navigator.onLine) return;
+      try {
+        const pending = await getPendingSales();
+        for (const sale of pending) {
+          try {
+            const saleRes = await api.post('/sales', {
+              items: sale.items,
+              paymentType: sale.paymentType
+            });
+            // não geramos pix offline; sincronização simples
+            await addLocalSale({ ...sale, id: saleRes.data.id || sale.id });
+            await removePendingSale(sale.id);
+          } catch {
+            // se falhar, tenta depois
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    sync();
+    window.addEventListener('online', sync);
+    return () => window.removeEventListener('online', sync);
   }, []);
 
   useEffect(() => {
@@ -177,7 +205,15 @@ const SalesPage = () => {
         createdAt: Date.now()
       });
     } catch (err) {
-      setMessage('Erro ao registrar venda');
+      setMessage('Erro ao registrar venda, salvando para sincronizar depois.');
+      const saleId = crypto.randomUUID();
+      await addPendingSale({
+        id: saleId,
+        items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+        total: total.total,
+        paymentType,
+        createdAt: Date.now()
+      });
     }
   };
 
