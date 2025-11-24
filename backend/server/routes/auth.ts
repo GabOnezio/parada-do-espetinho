@@ -33,36 +33,32 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ message: 'Credenciais inválidas' });
   }
 
-  // Enforce 2FA: if não há secret, gera um novo e exige confirmação; se já há, valida.
-  if (!user.twoFactorSecret) {
+  // Enforce 2FA: separa secret por contexto (admin vs vendas)
+  const secretField = context === 'VENDAS' ? 'twoFactorSecretSales' : 'twoFactorSecret';
+  const currentSecret = (user as any)[secretField] as string | null;
+
+  if (!currentSecret) {
     if (!totp) {
       const secret = authenticator.generateSecret();
-      await prisma.user.update({ where: { id: user.id }, data: { twoFactorSecret: secret } });
+      await prisma.user.update({ where: { id: user.id }, data: { [secretField]: secret } });
       const otpauthUrl = authenticator.keyuri(user.email, issuerLabel, secret);
       return res
         .status(200)
         .json({ require2fa: true, userId: user.id, otpauthUrl, message: 'Escaneie o QR Code e informe o código 2FA' });
     }
-
-    const userWithSecret = await prisma.user.findUnique({ where: { id: user.id } });
-    const isValid = userWithSecret?.twoFactorSecret
-      ? authenticator.verify({ token: totp, secret: userWithSecret.twoFactorSecret })
-      : false;
-    if (!isValid) {
-      return res.status(401).json({ message: 'Código 2FA incorreto' });
-    }
   } else {
     if (!totp) {
-      const otpauthUrl = authenticator.keyuri(user.email, issuerLabel, user.twoFactorSecret);
+      const otpauthUrl = authenticator.keyuri(user.email, issuerLabel, currentSecret);
       return res
         .status(200)
         .json({ require2fa: true, userId: user.id, otpauthUrl, message: 'Informe o código 2FA do autenticador' });
     }
+  }
 
-    const isValid = authenticator.verify({ token: totp, secret: user.twoFactorSecret });
-    if (!isValid) {
-      return res.status(401).json({ message: 'Código 2FA incorreto' });
-    }
+  // Validar o código com a secret do contexto
+  const secretToUse = currentSecret || (await prisma.user.findUnique({ where: { id: user.id } }))?.[secretField];
+  if (!secretToUse || !totp || !authenticator.verify({ token: totp, secret: secretToUse })) {
+    return res.status(401).json({ message: 'Código 2FA incorreto' });
   }
 
   const accessToken = await signAccessToken(user.id, user.role, user.refreshTokenVersion);
