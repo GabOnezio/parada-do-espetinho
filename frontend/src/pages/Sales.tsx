@@ -689,41 +689,23 @@ const SalesPage = () => {
               </button>
             </div>
             <div className="mt-4 flex flex-col items-center gap-3">
-              <div className="relative flex flex-col items-center gap-3">
-                {pixQr ? (
-                  <img src={pixQr} alt="QR Pix" className="h-64 w-64 transition-opacity duration-300" />
-                ) : (
-                  <p className="text-sm text-slate-600">Gerando QR...</p>
-                )}
-                {paymentStatus === 'paid' && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="animate-ping-slow flex h-28 w-28 items-center justify-center rounded-full bg-green-500/80 text-white">
-                      ✔
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="text-2xl font-bold text-primary">
-                R$ {(pendingPixSale?.total ?? total.total).toFixed(2)}
-              </div>
-              <button
-                className="btn-primary w-full"
-                onClick={() => {
-                  setPaymentStatus('paid');
-                  setTimeout(() => {
-                    setShowPixModal(false);
-                    if (pendingPixSale) {
-                      setLastReceipt(pendingPixSale);
-                      setCart([]);
-                      setAppliedCoupon(null);
-                      setCoupon('');
-                      setPendingPixSale(null);
-                    }
-                  }, 900);
-                }}
-              >
-                Pagar
-              </button>
+             <div className="relative flex flex-col items-center gap-3">
+               {pixQr ? (
+                 <img src={pixQr} alt="QR Pix" className="h-64 w-64 transition-opacity duration-300" />
+               ) : (
+                 <p className="text-sm text-slate-600">Gerando QR...</p>
+               )}
+               {paymentStatus === 'paid' && (
+                 <div className="absolute inset-0 flex items-center justify-center">
+                   <div className="animate-ping-slow flex h-28 w-28 items-center justify-center rounded-full bg-green-500/80 text-white">
+                     ✔
+                   </div>
+                 </div>
+               )}
+             </div>
+             <div className="text-2xl font-bold text-primary">
+               R$ {(pendingPixSale?.total ?? total.total).toFixed(2)}
+             </div>
             </div>
             <div className="mt-4 text-right">
           <button className="btn-primary" onClick={() => setShowPixModal(false)}>
