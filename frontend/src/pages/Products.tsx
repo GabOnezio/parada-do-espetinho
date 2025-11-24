@@ -51,7 +51,9 @@ const ProductsPage = () => {
     const measureHeader = () => {
       const header = document.querySelector('header');
       if (header) {
-        setHeaderHeight(header.getBoundingClientRect().height);
+        const rect = header.getBoundingClientRect();
+        // usar a borda inferior do header, não só a altura
+        setHeaderHeight(rect.bottom);
       }
     };
     measureHeader();
