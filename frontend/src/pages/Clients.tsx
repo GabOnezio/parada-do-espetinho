@@ -15,8 +15,6 @@ const ClientsPage = () => {
   const [search, setSearch] = useState('');
   const [listLimit, setListLimit] = useState(50);
   const [selected, setSelected] = useState<Client | null>(null);
-  const [ranking, setRanking] = useState<Client[]>([]);
-  const [limit, setLimit] = useState(10);
 
   const load = async (query?: string, limit?: number) => {
     try {
@@ -29,22 +27,7 @@ const ClientsPage = () => {
 
   useEffect(() => {
     load();
-    loadRanking(limit);
   }, []);
-
-  const loadRanking = async (n: number) => {
-    try {
-      const res = await api.get('/clients/ranking', { params: { limit: n } });
-      setRanking(res.data);
-    } catch (err) {
-      setRanking([]);
-    }
-  };
-
-  const handleLimitChange = (value: number) => {
-    setLimit(value);
-    loadRanking(value);
-  };
 
   return (
     <div className="space-y-6">
@@ -114,52 +97,19 @@ const ClientsPage = () => {
         </div>
 
         <div className="glass-card p-4">
-          <h2 className="text-lg font-semibold text-charcoal">Top compradores</h2>
-          <div className="mt-2">
-            <label className="text-xs uppercase text-slate-500">Mostrar até</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min={1}
-                max={12000}
-                value={limit}
-                onChange={(e) => handleLimitChange(Number(e.target.value))}
-                className="w-full"
-              />
-              <span className="text-xs text-slate-600 w-16 text-right">{limit}</span>
+          <h2 className="text-lg font-semibold text-charcoal">Detalhes</h2>
+          {selected ? (
+            <div className="mt-3 space-y-2 text-sm text-slate-700">
+              <div className="font-semibold text-charcoal">{selected.name}</div>
+              <div>Email: {selected.email || '—'}</div>
+              <div>Telefone: {selected.phone || '—'}</div>
+              <div>Total gasto: R$ {Number(selected.totalSpent).toFixed(2)}</div>
+              <div>Compras: {selected.purchaseCount}</div>
             </div>
-          </div>
-          <div className="mt-3 max-h-64 overflow-y-auto space-y-2">
-            {ranking.map((c, idx) => (
-              <div key={c.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm">
-                <div className="flex flex-col">
-                  <span className="text-xs text-slate-500">#{idx + 1}</span>
-                  <span className="font-semibold text-charcoal">{c.name}</span>
-                  <span className="text-xs text-slate-500">{c.email || c.phone || '—'}</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs font-semibold text-green-600">+{c.purchaseCount}</div>
-                  <div className="text-[11px] text-slate-500">R$ {Number(c.totalSpent).toFixed(2)}</div>
-                </div>
-              </div>
-            ))}
-            {ranking.length === 0 && <p className="text-sm text-slate-500">Nenhum comprador para exibir.</p>}
-          </div>
+          ) : (
+            <p className="mt-3 text-sm text-slate-500">Selecione um cliente para ver detalhes.</p>
+          )}
         </div>
-      </div>
-      <div className="glass-card p-4">
-        <h2 className="text-lg font-semibold text-charcoal">Detalhes</h2>
-        {selected ? (
-          <div className="mt-3 space-y-2 text-sm text-slate-700">
-            <div className="font-semibold text-charcoal">{selected.name}</div>
-            <div>Email: {selected.email || '—'}</div>
-            <div>Telefone: {selected.phone || '—'}</div>
-            <div>Total gasto: R$ {Number(selected.totalSpent).toFixed(2)}</div>
-            <div>Compras: {selected.purchaseCount}</div>
-          </div>
-        ) : (
-          <p className="mt-3 text-sm text-slate-500">Selecione um cliente para ver detalhes.</p>
-        )}
       </div>
     </div>
   );
