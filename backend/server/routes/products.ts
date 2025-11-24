@@ -37,9 +37,41 @@ router.get('/:id', requireAuth, async (req, res) => {
 });
 
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
-  const data = req.body;
-  const product = await prisma.product.create({ data });
-  return res.status(201).json(product);
+  const { name, brand, gtin, price, cost, weight, stock, stockMin } = req.body as {
+    name?: string;
+    brand?: string;
+    gtin?: string;
+    price?: number;
+    cost?: number;
+    weight?: number;
+    stock?: number;
+    stockMin?: number;
+  };
+
+  if (!name || !brand || !gtin || price === undefined || cost === undefined || weight === undefined) {
+    return res.status(400).json({ message: 'Nome, marca, GTIN, preço, custo e peso são obrigatórios' });
+  }
+
+  try {
+    const product = await prisma.product.create({
+      data: {
+        name,
+        brand,
+        gtin,
+        price,
+        cost,
+        weight,
+        stock: stock ?? 0,
+        stockMin: stockMin ?? 0
+      }
+    });
+    return res.status(201).json(product);
+  } catch (err: any) {
+    if (err.code === 'P2002') {
+      return res.status(409).json({ message: 'GTIN já cadastrado' });
+    }
+    return res.status(400).json({ message: 'Erro ao salvar produto' });
+  }
 });
 
 router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
