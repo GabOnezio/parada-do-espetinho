@@ -1,11 +1,11 @@
-const CACHE_NAME = 'parada-espetinho-v2';
+const CACHE_NAME = 'parada-espetinho-v3';
 const ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/icons/icon-192x192.png',
-  '/icons/icon-256x256.png',
-  '/icons/icon-512x512.png'
+  '/icons/maskable_icon_x192.png',
+  '/icons/maskable_icon_x384.png',
+  '/icons/maskable_icon_x512.png'
 ];
 
 self.addEventListener('install', (event) => {

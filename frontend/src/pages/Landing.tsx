@@ -1,9 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const LandingPage = () => {
+  const [showSplash, setShowSplash] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setFadeOut(true), 1400);
+    const hideTimer = setTimeout(() => setShowSplash(false), 2000);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(hideTimer);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sand via-white to-secondary/10">
+    <div className="relative min-h-screen bg-gradient-to-br from-sand via-white to-secondary/10">
+      {showSplash && (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-white transition-opacity duration-700 ${
+            fadeOut ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          <img
+            src="/icons/Parada%20do%20Espetinho%20com%20p%20bra%C3%A7o.png"
+            alt="Parada do Espetinho"
+            className="h-full w-full max-h-screen max-w-screen object-contain"
+          />
+        </div>
+      )}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6">
         <div className="flex items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-lg shadow-lg">
