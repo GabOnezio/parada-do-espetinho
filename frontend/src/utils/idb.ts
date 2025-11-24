@@ -4,6 +4,7 @@ const DB_NAME = 'pdv-offline';
 const DB_VERSION = 1;
 const STORE_PRODUCTS = 'products';
 const STORE_SALES = 'sales';
+const STORE_CLIENTS = 'clients';
 
 type Product = {
   id: string;
@@ -23,18 +24,31 @@ type LocalSale = {
   createdAt: number;
 };
 
+type Client = {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  cpf?: string;
+  totalSpent: number;
+  purchaseCount: number;
+};
+
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_PRODUCTS)) {
-        db.createObjectStore(STORE_PRODUCTS, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORE_SALES)) {
-        db.createObjectStore(STORE_SALES, { keyPath: 'id' });
-      }
-    };
+    const db = req.result;
+    if (!db.objectStoreNames.contains(STORE_PRODUCTS)) {
+      db.createObjectStore(STORE_PRODUCTS, { keyPath: 'id' });
+    }
+    if (!db.objectStoreNames.contains(STORE_SALES)) {
+      db.createObjectStore(STORE_SALES, { keyPath: 'id' });
+    }
+    if (!db.objectStoreNames.contains(STORE_CLIENTS)) {
+      db.createObjectStore(STORE_CLIENTS, { keyPath: 'id' });
+    }
+  };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
@@ -83,6 +97,26 @@ export async function clearLocalSales() {
   const tx = db.transaction(STORE_SALES, 'readwrite');
   tx.objectStore(STORE_SALES).clear();
   return tx.complete;
+}
+
+export async function saveClients(clients: Client[]) {
+  const db = await openDB();
+  const tx = db.transaction(STORE_CLIENTS, 'readwrite');
+  const store = tx.objectStore(STORE_CLIENTS);
+  store.clear();
+  clients.forEach((c) => store.put(c));
+  return tx.complete;
+}
+
+export async function getClients(): Promise<Client[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_CLIENTS, 'readonly');
+    const store = tx.objectStore(STORE_CLIENTS);
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result as Client[]);
+    req.onerror = () => reject(req.error);
+  });
 }
 
 export type { Product, LocalSale };

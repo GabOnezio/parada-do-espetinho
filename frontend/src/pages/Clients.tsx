@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
+import { getClients, saveClients } from '../utils/idb';
 
 type Client = {
   id: string;
@@ -16,6 +17,7 @@ const ClientsPage = () => {
   const [search, setSearch] = useState('');
   const [listLimit, setListLimit] = useState(50);
   const [selected, setSelected] = useState<Client | null>(null);
+  const [usingLocal, setUsingLocal] = useState(false);
 
   const load = async (query?: string, limit?: number) => {
     try {
@@ -34,13 +36,35 @@ const ClientsPage = () => {
       } else {
         setClients(data);
       }
+      await saveClients(data);
+      setUsingLocal(false);
     } catch (err) {
-      setClients([]);
+      // fallback local
+      try {
+        const local = await getClients();
+        setClients(local);
+        setUsingLocal(true);
+      } catch {
+        setClients([]);
+        setUsingLocal(true);
+      }
     }
   };
 
   useEffect(() => {
-    load();
+    // primeiro tenta local, depois remoto
+    (async () => {
+      try {
+        const local = await getClients();
+        if (local?.length) {
+          setClients(local);
+          setUsingLocal(true);
+        }
+      } catch {
+        /* ignore */
+      }
+      load();
+    })();
   }, []);
 
   return (
@@ -49,6 +73,7 @@ const ClientsPage = () => {
         <div>
           <p className="text-sm text-slate-500">Relacionamento</p>
           <h1 className="text-xl font-bold text-charcoal">Clientes</h1>
+          {usingLocal && <span className="text-xs text-amber-600">Mostrando dados locais (offline)</span>}
         </div>
         <div className="flex gap-2">
           <input
