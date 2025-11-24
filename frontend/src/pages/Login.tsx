@@ -35,6 +35,8 @@ const LoginPage = () => {
       if (result?.require2fa && result.userId) {
         setTwoFactorUserId(result.userId);
         setTwoFactorUri(result.otpauthUrl || null);
+        const flag = localStorage.getItem(`hideQr:${email.toLowerCase()}`);
+        setHideQr(!!flag);
       } else {
         navigate(nextPath);
       }
@@ -118,7 +120,12 @@ const LoginPage = () => {
                 <button
                   type="button"
                   className="text-xs text-primary underline"
-                  onClick={() => setHideQr(true)}
+                  onClick={() => {
+                    setHideQr(true);
+                    if (email) {
+                      localStorage.setItem(`hideQr:${email.toLowerCase()}`, '1');
+                    }
+                  }}
                 >
                   Já escaneei, ocultar QR
                 </button>
