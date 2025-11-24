@@ -65,20 +65,31 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="glass-card p-4 lg:col-span-1">
+      <div className="grid grid-cols-1 gap-4">
+        <div className="glass-card p-4">
           <h2 className="text-lg font-semibold text-charcoal">Novo produto</h2>
           <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
-            {['name', 'brand', 'gtin'].map((field) => (
-              <input
-                key={field}
-                placeholder={field.toUpperCase()}
-                value={(form as any)[field]}
-                onChange={(e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                required
-              />
-            ))}
+            <input
+              placeholder="GTIN"
+              value={form.gtin}
+              onChange={(e) => setForm((prev) => ({ ...prev, gtin: e.target.value }))}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              required
+            />
+            <input
+              placeholder="NOME"
+              value={form.name}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              required
+            />
+            <input
+              placeholder="MARCA"
+              value={form.brand}
+              onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              required
+            />
             <div className="flex gap-2">
               <input
                 type="number"
@@ -102,7 +113,7 @@ const ProductsPage = () => {
           </form>
         </div>
 
-        <div className="glass-card p-4 lg:col-span-2">
+        <div className="glass-card p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-charcoal">Lista</h2>
             <span className="text-xs text-slate-500">{products.length} itens</span>
