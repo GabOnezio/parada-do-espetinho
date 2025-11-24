@@ -63,6 +63,48 @@ type Category = {
   icon: React.ReactNode;
 };
 
+const categoryColors: Record<string, string> = {
+  basicos: '#fbbf24',
+  hortifruti: '#22c55e',
+  laticinios: '#67e8f9',
+  carnes: '#f97316',
+  paes: '#facc15',
+  congelados: '#38bdf8',
+  bebidas: '#ec4899',
+  processados: '#c084fc',
+  ingredientes: '#a16207',
+  ultraprocessados: '#f43f5e',
+  limpeza: '#1e3a8a',
+  higiene: '#475569',
+  eletronicos: '#0f766e',
+  cafe: '#7c3aed',
+  tabacaria: '#334155',
+  brinquedos_infantis: '#a855f7',
+  brinquedos_educativos: '#c084fc',
+  brinquedos_externos: '#8b5cf6',
+  bonecas_figures: '#ec4899',
+  jogos_board: '#6366f1',
+  salgadinhos: '#f97316',
+  salgadinhos_milho: '#f59e0b',
+  salgadinhos_batata: '#fbbf24',
+  amendoins_petiscos: '#d97706',
+  snacks_saudaveis: '#22c55e',
+  papelaria: '#38bdf8',
+  livros_midias: '#0ea5e9',
+  esportes: '#22c55e',
+  moda: '#d946ef',
+  casa_jardim: '#10b981',
+  automotivo: '#0ea5e9',
+  pet: '#f59e0b',
+  bebes: '#f472b6',
+  saude: '#ef4444',
+  beleza: '#fb7185',
+  eletrodomesticos: '#06b6d4',
+  tecnologia: '#0ea5e9',
+  moveis: '#c084fc',
+  joias: '#fbbf24'
+};
+
 const categories: Category[] = [
   { key: 'basicos', label: 'Alimentos Básicos', description: 'Arroz, feijão, farinhas, macarrão, óleo, sal, açúcar', icon: <Wheat size={16} /> },
   { key: 'hortifruti', label: 'Hortifrúti', description: 'Frutas, legumes, verduras, temperos frescos', icon: <Apple size={16} /> },
@@ -159,7 +201,10 @@ const ProductsPage = () => {
           className="mt-1 flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
         >
           <span className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+            <span
+              className="flex h-6 w-6 items-center justify-center rounded-lg text-white"
+              style={{ backgroundColor: categoryColors[selected.key] || '#e2e8f0' }}
+            >
               {selected.icon}
             </span>
             {selected.label}
@@ -179,7 +224,10 @@ const ProductsPage = () => {
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-primary/5"
                 title={`${c.label} – ${c.description}`}
               >
-                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                <span
+                  className="flex h-6 w-6 items-center justify-center rounded-lg text-white"
+                  style={{ backgroundColor: categoryColors[c.key] || '#e2e8f0' }}
+                >
                   {c.icon}
                 </span>
                 <span>{c.label}</span>
@@ -419,7 +467,8 @@ const ProductsPage = () => {
                 <div className="flex flex-1 items-start gap-2">
                   {getCategory(p) && (
                     <span
-                      className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700"
+                      className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-lg text-white"
+                      style={{ backgroundColor: categoryColors[getCategory(p)!.key] || '#e2e8f0' }}
                       title={`${getCategory(p)!.label} – ${getCategory(p)!.description}`}
                     >
                       {getCategory(p)!.icon}
