@@ -8,6 +8,24 @@ import { requireAuth } from '../middlewares/auth.js';
 
 authenticator.options = { window: 1 };
 
+type SecretBundle = { admin?: string; sales?: string };
+
+function parseSecrets(raw: string | null): SecretBundle {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as SecretBundle;
+    return parsed;
+  } catch {
+    return { admin: raw };
+  }
+}
+
+function persistSecrets(existing: string | null, update: Partial<SecretBundle>) {
+  const current = parseSecrets(existing);
+  const merged: SecretBundle = { ...current, ...update };
+  return JSON.stringify(merged);
+}
+
 const router = Router();
 
 router.post('/login', async (req, res) => {
@@ -33,14 +51,16 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ message: 'Credenciais inválidas' });
   }
 
-  // Enforce 2FA: separa secret por contexto (admin vs vendas)
-  const secretField = context === 'VENDAS' ? 'twoFactorSecretSales' : 'twoFactorSecret';
-  const currentSecret = (user as any)[secretField] as string | null;
+  // Enforce 2FA: secret diferente por contexto (armazenado em JSON no twoFactorSecret)
+  const secrets = parseSecrets(user.twoFactorSecret);
+  const secretKey: keyof SecretBundle = context === 'VENDAS' ? 'sales' : 'admin';
+  const currentSecret = secrets[secretKey] || null;
 
   if (!currentSecret) {
     if (!totp) {
       const secret = authenticator.generateSecret();
-      await prisma.user.update({ where: { id: user.id }, data: { [secretField]: secret } });
+      const payload = persistSecrets(user.twoFactorSecret, { [secretKey]: secret });
+      await prisma.user.update({ where: { id: user.id }, data: { twoFactorSecret: payload } });
       const otpauthUrl = authenticator.keyuri(user.email, issuerLabel, secret);
       return res
         .status(200)
@@ -56,7 +76,11 @@ router.post('/login', async (req, res) => {
   }
 
   // Validar o código com a secret do contexto
-  const secretToUse = currentSecret || (await prisma.user.findUnique({ where: { id: user.id } }))?.[secretField];
+  const freshUser = currentSecret
+    ? null
+    : await prisma.user.findUnique({ where: { id: user.id }, select: { twoFactorSecret: true } });
+  const secretToUse =
+    currentSecret || (freshUser ? parseSecrets(freshUser.twoFactorSecret).sales || parseSecrets(freshUser.twoFactorSecret).admin : null);
   if (!secretToUse || !totp || !authenticator.verify({ token: totp, secret: secretToUse })) {
     return res.status(401).json({ message: 'Código 2FA incorreto' });
   }
