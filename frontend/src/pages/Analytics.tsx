@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
+import { getLocalSales, getProducts, Product } from '../utils/idb';
 
 type AnalyticsData = {
   todayVolume: number;
@@ -11,12 +12,68 @@ type AnalyticsData = {
 
 const AnalyticsPage = () => {
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [usingLocal, setUsingLocal] = useState(false);
+
+  const computeFromLocal = async () => {
+    try {
+      const sales = await getLocalSales();
+      const products = await getProducts();
+      if (!sales.length) {
+        setData(null);
+        setUsingLocal(true);
+        return;
+      }
+      const today = new Date();
+      const isToday = (ts: number) => {
+        const d = new Date(ts);
+        return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+      };
+      const todaySales = sales.filter((s) => isToday(s.createdAt));
+      const todayVolume = todaySales.reduce((sum, s) => sum + s.total, 0);
+      const totalVolume = sales.reduce((sum, s) => sum + s.total, 0);
+      const averageTicket = sales.length ? totalVolume / sales.length : 0;
+
+      const productMap = new Map<string, Product>();
+      products.forEach((p) => productMap.set(p.id, p));
+      const productCounts: Record<string, number> = {};
+      sales.forEach((s) =>
+        s.items.forEach((it) => {
+          productCounts[it.productId] = (productCounts[it.productId] || 0) + it.quantity;
+        })
+      );
+      const topProducts = Object.entries(productCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([productId, quantity]) => ({
+          productId,
+          quantity,
+          product: productMap.get(productId) ? { name: productMap.get(productId)!.name } : undefined
+        }));
+
+      setData({
+        todayVolume,
+        averageTicket,
+        topProducts,
+        vipClients: [],
+        topCoupons: []
+      });
+      setUsingLocal(true);
+    } catch {
+      setData(null);
+      setUsingLocal(true);
+    }
+  };
 
   useEffect(() => {
     api
       .get('/analytics')
-      .then((res) => setData(res.data))
-      .catch(() => setData(null));
+      .then((res) => {
+        setData(res.data);
+        setUsingLocal(false);
+      })
+      .catch(() => {
+        computeFromLocal();
+      });
   }, []);
 
   return (
@@ -25,6 +82,7 @@ const AnalyticsPage = () => {
         <div>
           <p className="text-sm text-slate-500">Insights</p>
           <h1 className="text-xl font-bold text-charcoal">Analytics</h1>
+          {usingLocal && <span className="text-xs text-amber-600">Mostrando dados locais (offline)</span>}
         </div>
         <button className="btn-secondary">Exportar CSV</button>
       </div>
