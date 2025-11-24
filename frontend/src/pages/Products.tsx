@@ -189,7 +189,8 @@ const ProductsPage = () => {
     value: string,
     onChange: (val: string) => void,
     open: boolean,
-    setOpen: (v: boolean) => void
+    setOpen: (v: boolean) => void,
+    dropUp = false
   ) => {
     const selected = categories.find((c) => c.key === value) || categories[0];
     return (
@@ -212,7 +213,11 @@ const ProductsPage = () => {
           <span className="text-slate-500">▾</span>
         </button>
         {open && (
-          <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-b-xl border border-slate-200 bg-white shadow-lg">
+          <div
+            className={`absolute z-20 w-full max-h-64 overflow-y-auto rounded-b-xl border border-slate-200 bg-white shadow-lg ${
+              dropUp ? 'bottom-[110%]' : 'mt-1'
+            }`}
+          >
             {categories.map((c) => (
               <button
                 key={c.key}
@@ -595,7 +600,8 @@ const ProductsPage = () => {
                 editForm.categoryKey,
                 (val) => setEditForm((prev) => ({ ...prev, categoryKey: val })),
                 editCatOpen,
-                setEditCatOpen
+                setEditCatOpen,
+                true
               )}
               <div className="mt-4 flex items-center justify-end gap-2">
                 <button type="button" onClick={() => setEditing(null)} className="btn-ghost">
