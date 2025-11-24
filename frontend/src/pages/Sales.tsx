@@ -126,6 +126,8 @@ const SalesPage = () => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'paid'>('idle');
+  const [lastReceipt, setLastReceipt] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -261,6 +263,10 @@ const SalesPage = () => {
       setPixPayload('');
       setPixQr('');
       setShowPixModal(false);
+      const cartSnapshot = [...cart];
+      const totalSnapshot = total.total;
+      const paymentSnapshot = paymentType;
+      setPaymentStatus('idle');
       if (paymentType === 'PIX') {
         if (!selectedPixKey) {
           setMessage('Selecione uma forma de pagamento Pix');
@@ -294,6 +300,7 @@ const SalesPage = () => {
       setCart([]);
       setAppliedCoupon(null);
       setCoupon('');
+      setLastReceipt({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
       // Atualiza ranking local de mais vendidos
       const statsRaw = localStorage.getItem(SALES_STATS_KEY);
       const stats: Record<string, number> = statsRaw ? JSON.parse(statsRaw) : {};
@@ -656,12 +663,61 @@ const SalesPage = () => {
                 <p className="text-sm text-slate-600">Gerando QR...</p>
               )}
               <div className="text-2xl font-bold text-primary">R$ {total.total.toFixed(2)}</div>
+              <button
+                className="btn-primary w-full"
+                onClick={() => {
+                  setPaymentStatus('paid');
+                  setTimeout(() => setShowPixModal(false), 900);
+                }}
+              >
+                Pagar
+              </button>
+              {paymentStatus === 'paid' && (
+                <div className="flex flex-col items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-green-700">
+                  <span className="text-base font-semibold">PAGAMENTO CONCLUÍDO</span>
+                  <span className="animate-pulse text-2xl">✔</span>
+                </div>
+              )}
             </div>
             <div className="mt-4 text-right">
-              <button className="btn-primary" onClick={() => setShowPixModal(false)}>
-                Fechar
-              </button>
+          <button className="btn-primary" onClick={() => setShowPixModal(false)}>
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+      {lastReceipt && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-mono text-slate-800">
+          <div className="text-center">
+            ----------------------------------------
+            <br />
+            (---Parada--do--Espetinho-&gt;
+            <br />
+            ----------------------------------------
+          </div>
+          {lastReceipt.items.map((it) => (
+            <div key={it.product.id} className="mt-2">
+              <div className="font-semibold">{it.product.name}</div>
+              <div className="text-xs text-slate-600">
+                GTIN {it.product.gtin} • {it.product.brand}
+              </div>
+              <div>R$ {Number(it.product.price).toFixed(2)}</div>
+              {it.product.cost ? <div>Taxa individual: R$ {Number(it.product.cost).toFixed(2)}</div> : null}
             </div>
+          ))}
+          <div className="mt-3">
+            ----------------------------------------
+            <br />
+            TOTAL: R$ {lastReceipt.total.toFixed(2)}
+            <br />
+            FORMA DE PAGAMENTO: {lastReceipt.paymentType}
+            <br />
+            ----------------------------------------
+            <br />
+            *** PAGAMENTO APROVADO ***
+            <br />
+            ----------------------------------------
           </div>
         </div>
       )}
