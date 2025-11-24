@@ -7,6 +7,7 @@ type Product = {
   brand: string;
   gtin: string;
   price: number;
+  cost?: number;
   stock: number;
   isActive: boolean;
 };
@@ -14,7 +15,7 @@ type Product = {
 const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({ name: '', brand: '', gtin: '', price: 0, stock: 0 });
+  const [form, setForm] = useState({ name: '', brand: '', gtin: '', price: 0, cost: 0, stock: 0 });
   const [loading, setLoading] = useState(false);
 
   const load = async (query?: string) => {
@@ -43,7 +44,7 @@ const ProductsPage = () => {
     e.preventDefault();
     try {
       await api.post('/products', form);
-      setForm({ name: '', brand: '', gtin: '', price: 0, stock: 0 });
+      setForm({ name: '', brand: '', gtin: '', price: 0, cost: 0, stock: 0 });
       const updated = await api.get('/products', { params: { q: search } });
       setProducts(updated.data);
       localStorage.setItem('productsCache', JSON.stringify(updated.data));
@@ -120,13 +121,23 @@ const ProductsPage = () => {
                     type="number"
                     step="0.01"
                     placeholder="0,00"
-                    value={form.stock}
-                    onChange={(e) => setForm((prev) => ({ ...prev, stock: Number(e.target.value) }))}
+                    value={form.cost}
+                    onChange={(e) => setForm((prev) => ({ ...prev, cost: Number(e.target.value) }))}
                     className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
                   />
                   <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
                 </div>
               </div>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-wide text-slate-500">Estoque</label>
+              <input
+                type="number"
+                placeholder="0"
+                value={form.stock}
+                onChange={(e) => setForm((prev) => ({ ...prev, stock: Number(e.target.value) }))}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
             </div>
             <button type="submit" className="btn-primary w-full">
               Salvar
