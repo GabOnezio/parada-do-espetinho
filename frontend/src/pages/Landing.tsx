@@ -15,7 +15,7 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-sand via-white to-secondary/10">
+    <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-sand via-white to-secondary/10">
       {showSplash && (
         <div
           className={`fixed inset-0 z-50 flex items-center justify-center bg-white transition-opacity duration-700 ${
@@ -29,7 +29,7 @@ const LandingPage = () => {
           />
         </div>
       )}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6">
+      <header className="mx-auto flex w-full max-w-screen-lg items-center justify-between px-3 py-4 sm:px-4 sm:py-6">
         <div className="flex items-center gap-2">
           <img
             src="/logo/Parada%20do%20Espetinho%20sem%20o%20bra%C3%A7o%20com%20moldura.png"
@@ -44,15 +44,15 @@ const LandingPage = () => {
         <div className="hidden text-sm font-semibold text-slate-600 sm:block">Escolha como deseja acessar</div>
       </header>
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-16">
-        <section className="rounded-3xl bg-white/80 p-8 shadow-2xl ring-1 ring-white/60 backdrop-blur">
-          <h1 className="text-3xl font-bold text-charcoal">Bem-vindo</h1>
+      <main className="mx-auto flex w-full max-w-screen-lg flex-col gap-8 px-3 pb-12 sm:px-4 sm:pb-16">
+        <section className="rounded-3xl bg-white/80 p-6 shadow-2xl ring-1 ring-white/60 backdrop-blur sm:p-8">
+          <h1 className="text-2xl font-bold text-charcoal sm:text-3xl">Bem-vindo</h1>
           <p className="mt-2 max-w-2xl text-slate-600">
             Selecione a interface que deseja abrir. A Administração leva ao painel completo e Vendas abre o PDV após
             autenticação.
           </p>
 
-          <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
             <Link
               to="/login?next=/admin"
               className="group rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-primary/5 p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
