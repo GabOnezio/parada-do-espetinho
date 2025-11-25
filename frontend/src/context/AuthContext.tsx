@@ -53,8 +53,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(false);
   }, []);
 
-  const login: AuthContextProps['login'] = async ({ email, password, totp }) => {
-    const response = await api.post('/auth/login', { email, password, totp });
+  const login: AuthContextProps['login'] = async ({ email, password, totp, context }) => {
+    const response = await api.post('/auth/login', { email, password, totp, context });
     if (response.data.require2fa) {
       return { require2fa: true, userId: response.data.userId, otpauthUrl: response.data.otpauthUrl };
     }
