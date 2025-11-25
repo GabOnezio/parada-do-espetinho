@@ -72,3 +72,26 @@ VITE_APP_URL="http://localhost:5173"
 ```
 
 > Dica: após definir `DATABASE_URL` real, rode `npm run prisma:migrate --workspace backend` e (se quiser o admin padrão) `npm run seed --workspace backend`.
+
+## Como iniciar serviços
+
+- **MySQL (Railway – via TCP Proxy)**  
+  Não precisa “subir” manualmente, mas você pode conectar para testar:
+  ```sh
+  mysql -h <tcp-host> -P <tcp-port> -u root -p LlRDCuDPCqplNemagQUefUaMJsnYxcsp railway
+  ```
+  (Use o host/porta exibidos no painel do serviço MySQL > Networking > TCP Proxy.)
+
+- **Backend (porta 3333)**  
+  ```sh
+  cd backend
+  npm install
+  npm run dev   # roda em http://localhost:3333
+  ```
+
+- **Frontend (usando a API em 3333)**  
+  ```sh
+  cd frontend
+  npm install
+  VITE_API_URL=http://localhost:3333/api npm run dev -- --host
+  ```
