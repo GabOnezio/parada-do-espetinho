@@ -230,7 +230,8 @@ const SalesPage = () => {
     const interval = setInterval(async () => {
       try {
         const res = await api.get(`/pix/charges/${pendingTx}/status`);
-        if (res.data.status === 'PAID') {
+        const status = (res.data.status || '').toString().toUpperCase();
+        if (status === 'PAID') {
           setPaymentStatus('paid');
           setTimeout(() => {
             setShowPixModal(false);
@@ -239,9 +240,9 @@ const SalesPage = () => {
               setCart([]);
               setAppliedCoupon(null);
               setCoupon('');
-              setPendingPixSale(null);
-              setPendingTx(null);
             }
+            setPendingPixSale(null);
+            setPendingTx(null);
           }, 900);
         }
       } catch {
