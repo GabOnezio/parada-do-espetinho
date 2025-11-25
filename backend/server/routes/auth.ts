@@ -173,7 +173,14 @@ router.post('/2fa/verify', async (req, res) => {
     return res.status(400).json({ message: 'Usuário sem 2FA configurado' });
   }
 
-  const isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
+  const secrets = parseSecrets(user.twoFactorSecret);
+  const secretValues = Object.values(secrets).filter((value): value is string => Boolean(value));
+
+  if (secretValues.length === 0) {
+    return res.status(400).json({ message: 'Usuário sem 2FA configurado' });
+  }
+
+  const isValid = secretValues.some((secret) => authenticator.verify({ token: code, secret }));
   if (!isValid) {
     return res.status(401).json({ message: 'Código 2FA inválido' });
   }
