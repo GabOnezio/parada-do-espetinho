@@ -229,9 +229,9 @@ const SalesPage = () => {
     if (!pendingTx || paymentStatus === 'paid') return;
     const interval = setInterval(async () => {
       try {
-        const res = await api.get(`/pix/charges/${pendingTx}/status`);
+        const res = await api.get(`/mp/payments/${pendingTx}/status`);
         const status = (res.data.status || '').toString().toUpperCase();
-        if (status === 'PAID') {
+        if (status === 'APPROVED' || status === 'PAID') {
           setPaymentStatus('paid');
           setTimeout(() => {
             setShowPixModal(false);
@@ -299,26 +299,20 @@ const SalesPage = () => {
       setPaymentStatus('idle');
       setLastReceipt(null);
       if (paymentType === 'PIX') {
-        if (!selectedPixKey) {
-          setMessage('Selecione uma forma de pagamento Pix');
-          return;
-        }
         const saleRes = await api.post('/sales', {
           items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
           couponCode: appliedCoupon?.code,
           paymentType
         });
-        const chargeRes = await api.post('/pix/charges', {
+        const mpRes = await api.post('/mp/pix', {
           amount: total.total,
-          saleId: saleRes.data.id,
-          pixKeyId: selectedPixKey,
-          description: 'Venda PDV'
+          description: 'Venda PDV',
+          payer: undefined,
+          saleId: saleRes.data.id
         });
-        setPixPayload(chargeRes.data.qrCodePayload);
-        setPendingTx(chargeRes.data.charge?.txId || chargeRes.data.charge?.id || null);
-        setPixQr(
-          `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(chargeRes.data.qrCodePayload)}&size=320x320`
-        );
+        setPendingTx(String(mpRes.data.id));
+        setPixPayload(mpRes.data.qr_code || '');
+        setPixQr(`data:image/png;base64,${mpRes.data.qr_base64}`);
         setMessage('PIX gerado. Escaneie o QR Code para pagar.');
         setShowPixModal(true);
         setPendingPixSale({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });

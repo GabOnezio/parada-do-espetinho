@@ -95,3 +95,10 @@ VITE_APP_URL="http://localhost:5173"
   npm install
   VITE_API_URL=http://localhost:3333/api npm run dev -- --host
   ```
+
+- **Se preferir usar workspaces do monorepo (opcional)**  
+  ```sh
+  npm install
+  npm run dev --workspace backend    # backend em 3333
+  npm run dev --workspace frontend   # frontend apontando para a API local
+  ```
