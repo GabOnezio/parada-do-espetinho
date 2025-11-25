@@ -202,30 +202,47 @@ router.post('/charges', requireAuth, async (req, res) => {
 });
 
 router.post('/webhook', async (req, res) => {
-  const { txId, status } = req.body as { txId: string; status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED' };
-  if (!txId || !status) return res.status(400).json({ message: 'txId e status são obrigatórios' });
+  try {
+    // 1) Caso: Webhook do Mercado Pago (formato payment.updated)
+    if (req.body && req.body.data && req.body.data.id && req.body.type === 'payment') {
+      console.log('[pix webhook][MP] evento recebido:', JSON.stringify(req.body));
 
-  const charge = await prisma.pixCharge.findUnique({ where: { txId }, include: { sale: true } });
-  if (!charge) return res.status(404).json({ message: 'Cobrança não encontrada' });
-
-  await prisma.pixCharge.update({ where: { txId }, data: { status } });
-
-  if (charge.saleId && status === 'PAID') {
-    await prisma.sale.update({ where: { id: charge.saleId }, data: { status: 'COMPLETED' } });
-
-    // Credita pontos/total para o cliente, se existir na venda
-    if (charge.sale?.clientId) {
-      await prisma.client.update({
-        where: { id: charge.sale.clientId },
-        data: {
-          totalSpent: { increment: charge.amount },
-          purchaseCount: { increment: 1 }
-        }
-      });
+      // Futuro: buscar pagamento no MP e atualizar banco. Agora só confirma.
+      return res.status(200).json({ message: 'Webhook Mercado Pago recebido' });
     }
-  }
 
-  return res.json({ message: 'Webhook processado' });
+    // 2) Caso: webhook interno antigo (manda { txId, status })
+    const { txId, status } = req.body as { txId: string; status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED' };
+
+    if (!txId || !status) {
+      console.warn('[pix webhook] payload inválido:', req.body);
+      return res.status(400).json({ message: 'txId e status são obrigatórios' });
+    }
+
+    const charge = await prisma.pixCharge.findUnique({ where: { txId }, include: { sale: true } });
+    if (!charge) return res.status(404).json({ message: 'Cobrança não encontrada' });
+
+    await prisma.pixCharge.update({ where: { txId }, data: { status } });
+
+    if (charge.saleId && status === 'PAID') {
+      await prisma.sale.update({ where: { id: charge.saleId }, data: { status: 'COMPLETED' } });
+
+      if (charge.sale?.clientId) {
+        await prisma.client.update({
+          where: { id: charge.sale.clientId },
+          data: {
+            totalSpent: { increment: charge.amount },
+            purchaseCount: { increment: 1 }
+          }
+        });
+      }
+    }
+
+    return res.json({ message: 'Webhook processado' });
+  } catch (err) {
+    console.error('[pix webhook] erro:', err);
+    return res.status(500).json({ message: 'Erro ao processar webhook' });
+  }
 });
 
 router.get('/charges', requireAuth, async (_req, res) => {
