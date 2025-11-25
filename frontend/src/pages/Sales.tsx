@@ -363,6 +363,33 @@ const SalesPage = () => {
     return raw ? (JSON.parse(raw) as Record<string, number>) : {};
   }, [cart.length]); // recalcula quando mexe no carrinho (após venda)
 
+  const renderReceipt = () => {
+    if (!lastReceipt) return null;
+    const lines: string[] = [];
+    lines.push('----------------------------------------');
+    lines.push('(---Parada--do--Espetinho->');
+    lines.push('----------------------------------------');
+    lastReceipt.items.forEach((it) => {
+      lines.push(it.product.name);
+      lines.push(`GTIN ${it.product.gtin} • ${it.product.brand}`);
+      lines.push(`R$ ${Number(it.product.price).toFixed(2)}`);
+      if (it.product.cost) lines.push(`Taxa individual: R$ ${Number(it.product.cost).toFixed(2)}`);
+      lines.push('');
+    });
+    lines.push('----------------------------------------');
+    lines.push(`TOTAL: R$ ${lastReceipt.total.toFixed(2)}`);
+    lines.push(`FORMA DE PAGAMENTO: ${lastReceipt.paymentType}`);
+    lines.push('----------------------------------------');
+    lines.push('*** PAGAMENTO APROVADO ***');
+    lines.push('----------------------------------------');
+
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-mono text-slate-800">
+        <pre className="whitespace-pre-wrap text-center md:text-left">{lines.join('\n')}</pre>
+      </div>
+    );
+  };
+
   const filteredProducts = useMemo(() => {
     if (!search.trim()) return products;
     const term = search.toLowerCase();
@@ -710,40 +737,7 @@ const SalesPage = () => {
       </div>
     </div>
   )}
-      {lastReceipt && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-mono text-slate-800">
-          <div className="text-center">
-            ----------------------------------------
-            <br />
-            (---Parada--do--Espetinho-&gt;
-            <br />
-            ----------------------------------------
-          </div>
-          {lastReceipt.items.map((it) => (
-            <div key={it.product.id} className="mt-2">
-              <div className="font-semibold">{it.product.name}</div>
-              <div className="text-xs text-slate-600">
-                GTIN {it.product.gtin} • {it.product.brand}
-              </div>
-              <div>R$ {Number(it.product.price).toFixed(2)}</div>
-              {it.product.cost ? <div>Taxa individual: R$ {Number(it.product.cost).toFixed(2)}</div> : null}
-            </div>
-          ))}
-          <div className="mt-3">
-            ----------------------------------------
-            <br />
-            TOTAL: R$ {lastReceipt.total.toFixed(2)}
-            <br />
-            FORMA DE PAGAMENTO: {lastReceipt.paymentType}
-            <br />
-            ----------------------------------------
-            <br />
-            *** PAGAMENTO APROVADO ***
-            <br />
-            ----------------------------------------
-          </div>
-        </div>
-      )}
+      {lastReceipt && renderReceipt()}
     </div>
   );
 };
