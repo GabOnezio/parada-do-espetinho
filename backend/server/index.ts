@@ -15,6 +15,7 @@ import pixRoutes from './routes/pix.js';
 import analyticsRoutes from './routes/analytics.js';
 import usersRoutes from './routes/users.js';
 import mpPixRoutes from './routes/mpPix.js';
+import paymentConfigRoutes from './routes/paymentConfig.js';
 
 // Carrega .env a partir da raiz do monorepo ou do workspace backend
 const __filename = fileURLToPath(import.meta.url);
@@ -93,6 +94,7 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/pix', pixRoutes);
 app.use('/api', mpPixRoutes);
+app.use('/api/payment-config', paymentConfigRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', usersRoutes);
 

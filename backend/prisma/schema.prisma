@@ -192,3 +192,15 @@ model PixKey {
   updatedAt  DateTime @updatedAt
   charges    PixCharge[]
 }
+
+model PaymentConfig {
+  id                String   @id @default(cuid())
+  storeId           String?  @unique
+  mpAccessToken     String?
+  mpPublicKey       String?
+  mpWebhookSecret   String?
+  mpNotificationUrl String?
+  terminalLabel     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}

@@ -1,18 +1,26 @@
 import { Router } from 'express';
 import axios from 'axios';
+import { prisma } from '../utils/prisma.js';
+import { requireAuth } from '../middlewares/auth.js';
 
 const router = Router();
 
-const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
-const MP_NOTIFICATION_URL =
+const fallbackNotification =
   process.env.MP_NOTIFICATION_URL || 'https://api.paradadoespetinho.com/api/pix/webhook';
 
-router.post('/mp/pix', async (req, res) => {
+async function getPaymentConfig() {
+  return prisma.paymentConfig.findFirst({ orderBy: { createdAt: 'asc' } });
+}
+
+router.post('/mp/pix', requireAuth, async (req, res) => {
   try {
-    if (!MP_ACCESS_TOKEN) {
-      console.error('[mpPix] MP_ACCESS_TOKEN não configurado');
-      return res.status(500).json({ message: 'MP_ACCESS_TOKEN não configurado' });
+    const config = await getPaymentConfig();
+    if (!config?.mpAccessToken) {
+      console.error('[mpPix] Integração Mercado Pago não configurada');
+      return res.status(500).json({ message: 'Integração Mercado Pago não configurada' });
     }
+
+    const notificationUrl = config.mpNotificationUrl || fallbackNotification;
 
     const { amount, description, payer, saleId } = req.body as {
       amount: number;
@@ -34,7 +42,7 @@ router.post('/mp/pix', async (req, res) => {
         transaction_amount: Number(amount),
         description: description || 'Venda PDV – Parada do Espetinho',
         payment_method_id: 'pix',
-        notification_url: MP_NOTIFICATION_URL,
+        notification_url: notificationUrl,
         external_reference: saleId || undefined,
         payer: {
           email: payer?.email || 'cliente@exemplo.com',
@@ -47,7 +55,7 @@ router.post('/mp/pix', async (req, res) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+          Authorization: `Bearer ${config.mpAccessToken}`,
           'Content-Type': 'application/json',
           'X-Idempotency-Key': idemKey
         }
@@ -84,16 +92,17 @@ router.post('/mp/pix', async (req, res) => {
   }
 });
 
-router.get('/mp/payments/:id/status', async (req, res) => {
+router.get('/mp/payments/:id/status', requireAuth, async (req, res) => {
   try {
-    if (!MP_ACCESS_TOKEN) {
-      console.error('[mpPix] MP_ACCESS_TOKEN não configurado (status)');
-      return res.status(500).json({ message: 'MP_ACCESS_TOKEN não configurado' });
+    const config = await getPaymentConfig();
+    if (!config?.mpAccessToken) {
+      console.error('[mpPix] Integração Mercado Pago não configurada (status)');
+      return res.status(500).json({ message: 'Integração Mercado Pago não configurada' });
     }
 
     const paymentId = req.params.id;
     const mpRes = await axios.get(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` }
+      headers: { Authorization: `Bearer ${config.mpAccessToken}` }
     });
     const payment = mpRes.data;
     return res.json({ status: payment.status, payment });
@@ -114,6 +123,43 @@ router.get('/mp/payments/:id/status', async (req, res) => {
       status,
       details: data || err.message || 'erro desconhecido'
     });
+  }
+});
+
+// Teste de integração: cria um pagamento de R$1,00 para validar o token
+router.post('/mp/test-payment', requireAuth, async (_req, res) => {
+  try {
+    const config = await getPaymentConfig();
+    if (!config?.mpAccessToken) {
+      console.error('[mpPix] Integração Mercado Pago não configurada (teste)');
+      return res.status(500).json({ message: 'Integração Mercado Pago não configurada' });
+    }
+
+    const notificationUrl = config.mpNotificationUrl || fallbackNotification;
+    const mpRes = await axios.post(
+      'https://api.mercadopago.com/v1/payments',
+      {
+        transaction_amount: 1,
+        description: 'Teste de integração PDV – Parada do Espetinho',
+        payment_method_id: 'pix',
+        notification_url: notificationUrl,
+        external_reference: 'test-pdv'
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${config.mpAccessToken}`,
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': `pdv-test-${Date.now()}`
+        }
+      }
+    );
+
+    return res.json({ ok: true, id: mpRes.data.id, status: mpRes.data.status });
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const data = err?.response?.data;
+    console.error('[mpPix] teste de integração falhou', status, data || err.message || err);
+    return res.status(500).json({ message: 'Falha no teste de integração', status, details: data || err.message || err });
   }
 });
 

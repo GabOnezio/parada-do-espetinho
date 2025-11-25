@@ -14,6 +14,7 @@ import LandingPage from './pages/Landing';
 import ClientRegisterPage from './pages/ClientRegister';
 import { AppLayout } from './components/Layout';
 import { SalesLayout } from './components/SalesLayout';
+import MachineSettingsPage from './pages/admin/MachineSettings';
 
 const Protected = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ const App = () => {
           <Route path="pix" element={<PixPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="funcionarios" element={<EmployeesPage />} />
+          <Route path="maquininha" element={<MachineSettingsPage />} />
         </Route>
         <Route
           path="/vendas"

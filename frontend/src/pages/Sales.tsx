@@ -17,6 +17,40 @@ type Product = {
 type CartItem = { product: Product; quantity: number };
 type PixKey = { id: string; type: string; key: string; isDefault: boolean };
 
+// Constrói o texto do recibo em formato ASCII (monoespaçado)
+function buildReceiptText(receipt: { items: CartItem[]; total: number; paymentType: string }) {
+  const label = (() => {
+    switch (receipt.paymentType) {
+      case 'PIX':
+        return 'PIX';
+      case 'MONEY':
+        return 'DINHEIRO';
+      case 'CARD_DEBIT':
+        return 'CARTÃO DE DÉBITO';
+      case 'CARD_CREDIT':
+        return 'CARTÃO DE CRÉDITO';
+      default:
+        return receipt.paymentType;
+    }
+  })();
+
+  const lines: string[] = [];
+  lines.push('(---Parada--do--Espetinho->');
+  lines.push('');
+  receipt.items.forEach((it) => {
+    lines.push(it.product.name);
+    lines.push(`GTIN ${it.product.gtin} • ${it.product.brand}`);
+    lines.push(`R$ ${Number(it.product.price).toFixed(2)}`);
+    if (it.product.cost) lines.push(`Taxa individual: R$ ${Number(it.product.cost).toFixed(2)}`);
+    lines.push('');
+  });
+  lines.push(`TOTAL: R$ ${receipt.total.toFixed(2)}`);
+  lines.push(`FORMA DE PAGAMENTO: ${label}`);
+  lines.push('*** PAGAMENTO APROVADO ***');
+
+  return lines.join('\n');
+}
+
 const PRODUCTS_CACHE_KEY = 'pdv-products-cache'; // mantém compat localStorage
 const SALES_STATS_KEY = 'pdv-sales-stats';
 
@@ -123,12 +157,22 @@ const SalesPage = () => {
   const [pixPayload, setPixPayload] = useState('');
   const [pixQr, setPixQr] = useState('');
   const [showPixModal, setShowPixModal] = useState(false);
+  const [showCashModal, setShowCashModal] = useState(false);
+  const [cashAmount, setCashAmount] = useState(0);
+  const [cashPayerName, setCashPayerName] = useState('');
+  const [cashPayerCpf, setCashPayerCpf] = useState('');
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [cardBrand, setCardBrand] = useState('');
+  const [cardAuthCode, setCardAuthCode] = useState('');
+  const [cardValue, setCardValue] = useState(0);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'paid'>('idle');
   const [lastReceipt, setLastReceipt] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
   const [pendingPixSale, setPendingPixSale] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
+  const [pendingCashSale, setPendingCashSale] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
+  const [pendingCardSale, setPendingCardSale] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
   const [pendingTx, setPendingTx] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
@@ -293,12 +337,14 @@ const SalesPage = () => {
       setPixPayload('');
       setPixQr('');
       setShowPixModal(false);
+      setShowCashModal(false);
       const cartSnapshot = [...cart];
       const totalSnapshot = total.total;
       const paymentSnapshot = paymentType;
       setPaymentStatus('idle');
       setLastReceipt(null);
       if (paymentType === 'PIX') {
+        // Integração Mercado Pago: cria a venda, depois cria o pagamento PIX (API HTTP)
         const saleRes = await api.post('/sales', {
           items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
           couponCode: appliedCoupon?.code,
@@ -316,35 +362,20 @@ const SalesPage = () => {
         setMessage('PIX gerado. Escaneie o QR Code para pagar.');
         setShowPixModal(true);
         setPendingPixSale({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
+        await recordLocalSale(cartSnapshot, paymentSnapshot, totalSnapshot);
+      } else if (paymentType === 'MONEY') {
+        // Dinheiro/scambo: abre modal para confirmar pagamento na mão
+        setPendingCashSale({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
+        setCashAmount(totalSnapshot);
+        setShowCashModal(true);
+        return;
       } else {
-        await api.post('/sales', {
-          items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
-          couponCode: appliedCoupon?.code,
-          paymentType
-        });
-        setMessage('Venda registrada com sucesso');
-        setLastReceipt({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
-        setCart([]);
-        setAppliedCoupon(null);
-        setCoupon('');
+        // Cartões: registro manual do pagamento feito na maquininha física
+        setPendingCardSale({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
+        setCardValue(totalSnapshot);
+        setShowCardModal(true);
+        return;
       }
-      // Atualiza ranking local de mais vendidos
-      const statsRaw = localStorage.getItem(SALES_STATS_KEY);
-      const stats: Record<string, number> = statsRaw ? JSON.parse(statsRaw) : {};
-      cart.forEach((c) => {
-        stats[c.product.id] = (stats[c.product.id] || 0) + c.quantity;
-      });
-      localStorage.setItem(SALES_STATS_KEY, JSON.stringify(stats));
-      // Guarda venda local (para futuro sync/analytics)
-      const saleTotal = total.total;
-      const saleId = crypto.randomUUID();
-      await addLocalSale({
-        id: saleId,
-        items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
-        total: saleTotal,
-        paymentType,
-        createdAt: Date.now()
-      });
     } catch (err) {
       setMessage('Erro ao registrar venda, salvando para sincronizar depois.');
       const saleId = crypto.randomUUID();
@@ -358,6 +389,93 @@ const SalesPage = () => {
     }
   };
 
+  const recordLocalSale = async (itemsSnapshot: CartItem[], paymentSnapshot: string, totalSnapshot: number) => {
+    const statsRaw = localStorage.getItem(SALES_STATS_KEY);
+    const stats: Record<string, number> = statsRaw ? JSON.parse(statsRaw) : {};
+    itemsSnapshot.forEach((c) => {
+      stats[c.product.id] = (stats[c.product.id] || 0) + c.quantity;
+    });
+    localStorage.setItem(SALES_STATS_KEY, JSON.stringify(stats));
+    const saleId = crypto.randomUUID();
+    await addLocalSale({
+      id: saleId,
+      items: itemsSnapshot.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+      total: totalSnapshot,
+      paymentType: paymentSnapshot,
+      createdAt: Date.now()
+    });
+  };
+
+  const confirmCashPayment = async () => {
+    if (!pendingCashSale) return;
+    try {
+      // Apenas registra a venda; o pagamento já foi feito no caixa físico
+      await api.post('/sales', {
+        items: pendingCashSale.items.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+        couponCode: appliedCoupon?.code,
+        paymentType: pendingCashSale.paymentType
+      });
+      setMessage('Venda registrada com sucesso');
+      setLastReceipt({ items: pendingCashSale.items, total: pendingCashSale.total, paymentType: pendingCashSale.paymentType });
+      setCart([]);
+      setAppliedCoupon(null);
+      setCoupon('');
+      await recordLocalSale(pendingCashSale.items, pendingCashSale.paymentType, pendingCashSale.total);
+    } catch (err) {
+      setMessage('Erro ao registrar venda, salvando para sincronizar depois.');
+      const saleId = crypto.randomUUID();
+      await addPendingSale({
+        id: saleId,
+        items: pendingCashSale.items.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+        total: pendingCashSale.total,
+        paymentType: pendingCashSale.paymentType,
+        createdAt: Date.now()
+      });
+    } finally {
+      setShowCashModal(false);
+      setPendingCashSale(null);
+      setCashPayerName('');
+      setCashPayerCpf('');
+    }
+  };
+
+  const confirmCardPayment = async () => {
+    if (!pendingCardSale) return;
+    try {
+      // Pagamento já passou na maquininha física; aqui só registramos a venda
+      await api.post('/sales', {
+        items: pendingCardSale.items.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+        couponCode: appliedCoupon?.code,
+        paymentType: pendingCardSale.paymentType
+      });
+      setMessage('Venda registrada com sucesso');
+      setLastReceipt({
+        items: pendingCardSale.items,
+        total: pendingCardSale.total,
+        paymentType: pendingCardSale.paymentType
+      });
+      setCart([]);
+      setAppliedCoupon(null);
+      setCoupon('');
+      await recordLocalSale(pendingCardSale.items, pendingCardSale.paymentType, pendingCardSale.total);
+    } catch (err) {
+      setMessage('Erro ao registrar venda, salvando para sincronizar depois.');
+      const saleId = crypto.randomUUID();
+      await addPendingSale({
+        id: saleId,
+        items: pendingCardSale.items.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+        total: pendingCardSale.total,
+        paymentType: pendingCardSale.paymentType,
+        createdAt: Date.now()
+      });
+    } finally {
+      setShowCardModal(false);
+      setPendingCardSale(null);
+      setCardAuthCode('');
+      setCardBrand('');
+    }
+  };
+
   const stats = useMemo(() => {
     const raw = localStorage.getItem(SALES_STATS_KEY);
     return raw ? (JSON.parse(raw) as Record<string, number>) : {};
@@ -365,27 +483,10 @@ const SalesPage = () => {
 
   const renderReceipt = () => {
     if (!lastReceipt) return null;
-    const lines: string[] = [];
-    lines.push('----------------------------------------');
-    lines.push('(---Parada--do--Espetinho->');
-    lines.push('----------------------------------------');
-    lastReceipt.items.forEach((it) => {
-      lines.push(it.product.name);
-      lines.push(`GTIN ${it.product.gtin} • ${it.product.brand}`);
-      lines.push(`R$ ${Number(it.product.price).toFixed(2)}`);
-      if (it.product.cost) lines.push(`Taxa individual: R$ ${Number(it.product.cost).toFixed(2)}`);
-      lines.push('');
-    });
-    lines.push('----------------------------------------');
-    lines.push(`TOTAL: R$ ${lastReceipt.total.toFixed(2)}`);
-    lines.push(`FORMA DE PAGAMENTO: ${lastReceipt.paymentType}`);
-    lines.push('----------------------------------------');
-    lines.push('*** PAGAMENTO APROVADO ***');
-    lines.push('----------------------------------------');
-
+    const receiptText = buildReceiptText(lastReceipt);
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-mono text-slate-800">
-        <pre className="whitespace-pre-wrap text-center md:text-left">{lines.join('\n')}</pre>
+        <pre className="whitespace-pre-wrap text-center md:text-left">{receiptText}</pre>
       </div>
     );
   };
@@ -734,9 +835,118 @@ const SalesPage = () => {
             Fechar
           </button>
         </div>
+        </div>
       </div>
-    </div>
-  )}
+      )}
+      {showCashModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="relative flex items-center justify-center">
+              <h3 className="text-lg font-semibold text-charcoal">Pagamento por dinheiro/scambo</h3>
+              <button className="absolute right-0 text-slate-500" onClick={() => setShowCashModal(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-xs uppercase tracking-wide text-slate-500">Valor recebido</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(Number(e.target.value))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wide text-slate-500">Nome (opcional)</label>
+                <input
+                  value={cashPayerName}
+                  onChange={(e) => setCashPayerName(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wide text-slate-500">CPF (opcional)</label>
+                <input
+                  value={cashPayerCpf}
+                  onChange={(e) => setCashPayerCpf(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                />
+              </div>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button className="btn-ghost" onClick={() => setShowCashModal(false)}>
+                  Cancelar
+                </button>
+                <button className="btn-primary" onClick={confirmCashPayment}>
+                  Pagar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showCardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="relative flex items-center justify-center">
+              <h3 className="text-lg font-semibold text-charcoal">Pagamento na maquininha</h3>
+              <button className="absolute right-0 text-slate-500" onClick={() => setShowCardModal(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="mt-4 space-y-3 text-sm text-slate-700">
+              <p>Confirme o pagamento realizado na maquininha física.</p>
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 font-semibold text-charcoal">
+                <span>Total</span>
+                <span>R$ {(pendingCardSale?.total ?? total.total).toFixed(2)}</span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Bandeira (opcional)</label>
+                  <input
+                    value={cardBrand}
+                    onChange={(e) => setCardBrand(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                    placeholder="Visa, Mastercard..."
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-slate-500">NSU / Autorização</label>
+                  <input
+                    value={cardAuthCode}
+                    onChange={(e) => setCardAuthCode(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                    placeholder="Código da maquininha"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wide text-slate-500">Valor cobrado</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={cardValue}
+                  onChange={(e) => setCardValue(Number(e.target.value))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                />
+              </div>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button className="btn-ghost" onClick={() => setShowCardModal(false)}>
+                  Cancelar
+                </button>
+                <button className="btn-primary" onClick={confirmCardPayment}>
+                  Pagamento aprovado na maquininha
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">
+                Observação: a cobrança ocorre na maquininha física. Aqui registramos apenas o resultado para estoque e
+                recibo.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       {lastReceipt && renderReceipt()}
     </div>
   );

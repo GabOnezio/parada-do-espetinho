@@ -10,7 +10,8 @@ const navItems = [
   { to: '/admin/cupons', label: 'Cupons' },
   { to: '/admin/pix', label: 'Pix' },
   { to: '/admin/analytics', label: 'Analytics' },
-  { to: '/admin/funcionarios', label: 'Funcionários' }
+  { to: '/admin/funcionarios', label: 'Funcionários' },
+  { to: '/admin/maquininha', label: 'Maquininha' }
 ];
 
 export const AppLayout = () => {
