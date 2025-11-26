@@ -7,7 +7,7 @@
   "orientation": "portrait",
   "theme_color": "#F97316",
   "background_color": "#F1F5F9",
-  "description": "Painel de vendas, estoque e Pix para a Parada do Espetinho.",
+  "description": "Instale o WebApp para ter acesso ao sistema offline!",
   "icons": [
     {
       "src": "/icons/maskable_icon_x48.png",
@@ -54,22 +54,22 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshots/login-1080x1920.png",
+      "src": "/screenshots/screenshot-narrow-phone-representation.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/screenshots/dashboard-1080x1920.png",
-      "sizes": "1080x1920",
+      "src": "/screenshots/screenshot-wide-phone-and-desktop-representation.png",
+      "sizes": "1920x1080",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "wide"
     },
     {
-      "src": "/screenshots/vendas-1080x1920.png",
-      "sizes": "1080x1920",
+      "src": "/screenshots/screenshot-wide-phone-representation.png",
+      "sizes": "1920x1080",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "wide"
     }
   ]
 }
