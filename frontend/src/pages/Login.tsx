@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Eye, EyeClosed } from 'lucide-react';
 
 const LoginPage = () => {
-  const { login, verify2fa } = useAuth();
+  const { login, verify2fa, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
@@ -14,14 +14,20 @@ const LoginPage = () => {
   const [twoFactorUri, setTwoFactorUri] = useState<string | null>(null);
   const [hideQr, setHideQr] = useState(false);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const nextPath = searchParams.get('next') || '/admin';
   const [showPassword, setShowPassword] = useState(false);
   const panelContext = nextPath.startsWith('/vendas') ? 'VENDAS' : 'ADMIN';
 
+  useEffect(() => {
+    if (!authLoading && user && !twoFactorUserId) {
+      navigate(nextPath, { replace: true });
+    }
+  }, [authLoading, user, navigate, nextPath, twoFactorUserId]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsSubmitting(true);
     setError('');
     try {
       const result = await login({ email, password, context: panelContext });
@@ -36,14 +42,14 @@ const LoginPage = () => {
     } catch (err) {
       setError('Credenciais inválidas');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleVerify2fa = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!twoFactorUserId) return;
-    setLoading(true);
+    setIsSubmitting(true);
     setError('');
     try {
       await verify2fa(twoFactorUserId, twoFactorCode);
@@ -54,7 +60,7 @@ const LoginPage = () => {
     } catch (err) {
       setError('Código 2FA incorreto');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -99,8 +105,8 @@ const LoginPage = () => {
               </div>
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Entrando...' : 'Entrar'}
+            <button type="submit" className="btn-primary w-full" disabled={isSubmitting || authLoading}>
+              {isSubmitting ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
         ) : (
@@ -128,8 +134,8 @@ const LoginPage = () => {
               required
             />
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Validando...' : 'Validar código'}
+            <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
+              {isSubmitting ? 'Validando...' : 'Validar código'}
             </button>
           </form>
         )}

@@ -129,6 +129,19 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
+router.get('/session', requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.id },
+    select: { id: true, email: true, name: true, role: true }
+  });
+
+  if (!user) {
+    return res.status(404).json({ message: 'Usuário não encontrado' });
+  }
+
+  return res.json({ user });
+});
+
 router.post('/logout', requireAuth, async (req, res) => {
   await prisma.user.update({
     where: { id: req.user!.id },

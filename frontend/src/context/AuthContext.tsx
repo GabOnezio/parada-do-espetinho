@@ -37,20 +37,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedAccess = localStorage.getItem('accessToken');
-    const storedRefresh = localStorage.getItem('refreshToken');
-    if (storedAccess && storedRefresh) {
-      const decoded = decodeToken(storedAccess);
-      if (decoded) {
-        setUser({
-          id: decoded.sub,
-          email: '',
-          name: 'Usuário',
-          role: decoded.role
-        });
+    let active = true;
+
+    const bootstrap = async () => {
+      const storedAccess = localStorage.getItem('accessToken');
+      const storedRefresh = localStorage.getItem('refreshToken');
+
+      if (!storedAccess || !storedRefresh) {
+        if (active) setLoading(false);
+        return;
       }
-    }
-    setLoading(false);
+
+      const decoded = decodeToken(storedAccess);
+      if (decoded && active) {
+        setUser((current) =>
+          current ?? {
+            id: decoded.sub,
+            email: '',
+            name: 'Usuário',
+            role: decoded.role
+          }
+        );
+      }
+
+      try {
+        const response = await api.get('/auth/session');
+        if (!active) return;
+        setUser(response.data.user);
+      } catch (err) {
+        if (!active) return;
+        if ((err as any)?.response?.status === 401) {
+          clearTokens();
+          setUser(null);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const login: AuthContextProps['login'] = async ({ email, password, totp, context }) => {

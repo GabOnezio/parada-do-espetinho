@@ -18,14 +18,14 @@ const LandingPage = () => {
     <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-sand via-white to-secondary/10">
       {showSplash && (
         <div
-          className={`fixed inset-0 z-50 flex items-center justify-center bg-white transition-opacity duration-700 ${
+          className={`splash-overlay fixed inset-0 z-50 flex w-full flex-col items-start justify-start bg-white transition-opacity duration-700 ${
             fadeOut ? 'opacity-0' : 'opacity-100'
-          }`}
+          } sm:flex-row sm:items-center sm:justify-center`}
         >
           <img
             src="/icons/Parada%20do%20Espetinho%20com%20p%20bra%C3%A7o.png"
             alt="Parada do Espetinho"
-            className="h-full w-full max-h-screen max-w-screen object-contain"
+            className="splash-image h-full w-full"
           />
         </div>
       )}

@@ -55,3 +55,43 @@ body {
 .animate-ping-slow {
   animation: ping-slow 0.8s ease-in-out forwards;
 }
+
+.splash-overlay {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.splash-image {
+  width: 100%;
+  height: auto;
+  max-height: 100vh;
+  object-fit: contain;
+  object-position: top center;
+}
+
+@media (max-width: 639px) and (orientation: landscape) {
+  .splash-overlay {
+    align-items: center;
+    justify-content: center;
+  }
+
+  .splash-image {
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+  }
+}
+
+@media (min-width: 640px) {
+  .splash-overlay {
+    align-items: center;
+    justify-content: center;
+  }
+
+  .splash-image {
+    object-fit: contain;
+    height: 100%;
+    object-position: center;
+  }
+}
