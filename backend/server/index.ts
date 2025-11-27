@@ -58,21 +58,52 @@ const envOrigins = [
 const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins])).filter(Boolean);
 console.log('[cors] allowed origins =>', allowedOrigins);
 
+const allowedHostnames = allowedOrigins
+  .map((origin) => {
+    try {
+      return new URL(origin).hostname;
+    } catch (err) {
+      return null;
+    }
+  })
+  .filter(Boolean) as string[];
+
+const fallbackOrigin = allowedOrigins.find((origin) => origin.startsWith('http')) || allowedOrigins[0];
+
+function isOriginAllowed(origin?: string | null) {
+  if (!origin) return Boolean(fallbackOrigin);
+
+  try {
+    const { hostname } = new URL(origin);
+    return (
+      allowedHostnames.includes(hostname) ||
+      hostname === 'paradadoespetinho.com' ||
+      hostname.endsWith('.paradadoespetinho.com') ||
+      hostname.endsWith('.vercel.app')
+    );
+  } catch (err) {
+    console.warn('[cors] origin parse failed:', origin, err);
+    return false;
+  }
+}
+
 const corsOptions: CorsOptions = {
   origin(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.paradadoespetinho.com')) {
-      return callback(null, true);
+    if (isOriginAllowed(origin)) {
+      return callback(null, origin || fallbackOrigin);
     }
     console.warn('[cors] origin blocked:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
