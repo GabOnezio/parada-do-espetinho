@@ -1,14 +1,13 @@
 import { Router } from 'express';
 import { prisma } from '../utils/prisma.js';
 import { requireAdmin, requireAuth } from '../middlewares/auth.js';
+import { getPaymentConfig } from '../utils/paymentConfig.js';
 
 const router = Router();
 
 // Obtém a configuração (assume loja única, pega o primeiro registro)
 router.get('/', requireAuth, requireAdmin, async (_req, res) => {
-  const config = await prisma.paymentConfig.findFirst({
-    orderBy: { createdAt: 'asc' }
-  });
+  const config = await getPaymentConfig();
   return res.json(config || null);
 });
 

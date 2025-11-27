@@ -1,16 +1,12 @@
 import { Router } from 'express';
 import axios from 'axios';
-import { prisma } from '../utils/prisma.js';
+import { getPaymentConfig } from '../utils/paymentConfig.js';
 import { requireAuth } from '../middlewares/auth.js';
 
 const router = Router();
 
 const fallbackNotification =
   process.env.MP_NOTIFICATION_URL || 'https://api.paradadoespetinho.com/api/pix/webhook';
-
-async function getPaymentConfig() {
-  return prisma.paymentConfig.findFirst({ orderBy: { createdAt: 'asc' } });
-}
 
 router.post('/mp/pix', requireAuth, async (req, res) => {
   try {
