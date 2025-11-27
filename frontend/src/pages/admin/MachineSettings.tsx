@@ -21,7 +21,7 @@ const MachineSettingsPage = () => {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<string | null>(null);
+  const [testFeedback, setTestFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -56,14 +56,22 @@ const MachineSettingsPage = () => {
   };
 
   const handleTest = async () => {
+    if (!config.terminalLabel?.trim()) {
+      setTestFeedback({ type: 'error', message: 'Para Testar coloque o ID do caixa / identificador' });
+      return;
+    }
+
     setTesting(true);
-    setTestResult(null);
+    setTestFeedback(null);
     try {
       const res = await api.post('/mp/test-payment');
-      setTestResult(`Teste OK. Payment id: ${res.data.id}, status: ${res.data.status}`);
+      setTestFeedback({
+        type: 'success',
+        message: `Teste OK. Payment id: ${res.data.id}, status: ${res.data.status}`
+      });
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Erro ao testar integração.';
-      setTestResult(msg);
+      setTestFeedback({ type: 'error', message: msg });
     } finally {
       setTesting(false);
     }
@@ -122,7 +130,7 @@ const MachineSettingsPage = () => {
                 />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-wide text-slate-500">Identificador da maquininha</label>
+                <label className="text-xs uppercase tracking-wide text-slate-500">ID do caixa / identificador / ID da maquininha</label>
                 <input
                   value={config.terminalLabel || ''}
                   onChange={(e) => handleChange('terminalLabel', e.target.value)}
@@ -148,7 +156,11 @@ const MachineSettingsPage = () => {
             {testing ? 'Testando...' : 'Gerar pagamento de teste (R$ 1,00)'}
           </button>
         </div>
-        {testResult && <p className="text-sm text-slate-600">{testResult}</p>}
+        {testFeedback && (
+          <p className={`text-sm ${testFeedback.type === 'error' ? 'text-red-500' : 'text-slate-600'}`}>
+            {testFeedback.message}
+          </p>
+        )}
         <p className="text-xs text-slate-500">
           O teste cria um pagamento PIX de R$ 1,00 via API do Mercado Pago. Use para validar se o Access Token está
           correto e se o webhook está acessível.
