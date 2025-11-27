@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const SalesLayout = ({ children }: { children: React.ReactNode }) => {
   const { logout, user } = useAuth();
   const location = useLocation();
-  const isVendas = location.pathname.startsWith('/vendas') || location.pathname.startsWith('/cliente');
+  const isSalesPage = location.pathname.startsWith('/vendas');
+  const isClientPage = location.pathname.startsWith('/cliente');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sand via-white to-secondary/10">
@@ -24,9 +26,18 @@ export const SalesLayout = ({ children }: { children: React.ReactNode }) => {
             </div>
           </Link>
           <div className="flex items-center gap-4 text-sm text-slate-700">
-            {isVendas && (
+            {isSalesPage && (
               <Link to="/cliente" className="rounded-lg px-3 py-2 text-primary hover:bg-primary/10">
                 Cliente
+              </Link>
+            )}
+            {isClientPage && (
+              <Link
+                to="/vendas"
+                className="rounded-lg p-2 text-secondary transition hover:text-secondary/80 focus:outline-none focus:ring-2 focus:ring-secondary/30"
+                aria-label="Voltar para vendas"
+              >
+                <ArrowLeft className="h-5 w-5" />
               </Link>
             )}
             <span className="hidden sm:block">{user?.name || 'Equipe de Vendas'}</span>
