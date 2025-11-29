@@ -46,7 +46,11 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
 
   try {
     if (hard === 'true') {
-      await prisma.promotionalTicket.delete({ where: { id: req.params.id } });
+      await prisma.$transaction([
+        prisma.clientTicket.deleteMany({ where: { ticketId: req.params.id } }),
+        prisma.sale.updateMany({ where: { appliedTicketId: req.params.id }, data: { appliedTicketId: null } }),
+        prisma.promotionalTicket.delete({ where: { id: req.params.id } })
+      ]);
       return res.json({ message: 'Cupom removido' });
     }
 

@@ -149,10 +149,10 @@ const CouponsPage = () => {
                       -{t.discountPercent}%
                     </span>
                     <button
-                      onClick={() => handleDeactivate(t.id)}
+                      onClick={() => handleRemove(t.id)}
                       className="rounded-lg bg-red-50 p-2 text-red-500 transition hover:bg-red-100"
-                      title="Desativar cupom"
-                      aria-label={`Desativar cupom ${t.code}`}
+                      title="Remover cupom"
+                      aria-label={`Remover cupom ${t.code}`}
                     >
                       <Trash2 size={16} />
                     </button>
