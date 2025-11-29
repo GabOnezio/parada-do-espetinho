@@ -42,7 +42,14 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
 });
 
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
+  const { hard } = req.query as { hard?: string };
+
   try {
+    if (hard === 'true') {
+      await prisma.promotionalTicket.delete({ where: { id: req.params.id } });
+      return res.json({ message: 'Cupom removido' });
+    }
+
     await prisma.promotionalTicket.update({
       where: { id: req.params.id },
       data: { isActive: false }
