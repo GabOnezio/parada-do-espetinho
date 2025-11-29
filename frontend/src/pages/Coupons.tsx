@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import api from '../api/client';
 
 type Ticket = {
@@ -116,14 +117,26 @@ const CouponsPage = () => {
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
             {tickets.map((t) => (
               <div key={t.id} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold text-charcoal">{t.code}</div>
                     <div className="text-xs text-slate-500">{t.description}</div>
                   </div>
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                    -{t.discountPercent}%
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                      -{t.discountPercent}%
+                    </span>
+                    {t.isActive && (
+                      <button
+                        onClick={() => handleDelete(t.id)}
+                        className="rounded-lg bg-red-50 p-2 text-red-500 transition hover:bg-red-100"
+                        title="Desativar cupom"
+                        aria-label={`Desativar cupom ${t.code}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
                   <span>
@@ -133,14 +146,6 @@ const CouponsPage = () => {
                     {t.isActive ? 'Ativo' : 'Inativo'}
                   </span>
                 </div>
-                {t.isActive && (
-                  <button
-                    onClick={() => handleDelete(t.id)}
-                    className="mt-3 w-full rounded-lg border border-red-100 bg-red-50 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
-                  >
-                    Desativar
-                  </button>
-                )}
               </div>
             ))}
           </div>
