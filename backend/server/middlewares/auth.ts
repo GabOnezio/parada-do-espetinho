@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { jwtVerify } from 'jose';
 import type { JWTPayload } from 'jose';
+import { prisma } from '../utils/prisma.js';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-change-me');
 
@@ -25,7 +26,25 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ message: 'Token inválido' });
     }
 
-    req.user = { id: payload.sub as string, role: payload.role as any };
+    let role = payload.role;
+    if (!role && payload.sub) {
+      const user = await prisma.user.findUnique({
+        where: { id: payload.sub as string },
+        select: { role: true, isActive: true }
+      });
+
+      if (!user || !user.isActive) {
+        return res.status(401).json({ message: 'Usuário inválido' });
+      }
+
+      role = user.role;
+    }
+
+    if (!role) {
+      return res.status(401).json({ message: 'Token sem perfil de acesso' });
+    }
+
+    req.user = { id: payload.sub as string, role: role as any };
     return next();
   } catch (err) {
     return res.status(401).json({ message: 'Não autorizado' });
