@@ -26,13 +26,13 @@ router.get('/validate', requireAuth, async (req, res) => {
   return res.json(ticket);
 });
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requireAuth, requireAdmin, async (req, res) => {
   const data = req.body;
   const ticket = await prisma.promotionalTicket.create({ data });
   return res.status(201).json(ticket);
 });
 
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const ticket = await prisma.promotionalTicket.update({ where: { id: req.params.id }, data: req.body });
     return res.json(ticket);
@@ -41,7 +41,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     await prisma.promotionalTicket.update({
       where: { id: req.params.id },

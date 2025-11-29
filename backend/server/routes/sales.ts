@@ -88,12 +88,14 @@ router.post('/', requireAuth, async (req, res) => {
       include: { saleItems: true }
     });
 
-    // Atualiza estoque e contadores
-    for (const item of items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { stock: { decrement: item.quantity } }
-      });
+    // Atualiza estoque e contadores APENAS se venda for COMPLETED
+    if (saleStatus === 'COMPLETED') {
+      for (const item of items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } }
+        });
+      }
     }
 
     if (clientId) {
@@ -132,14 +134,52 @@ router.post('/', requireAuth, async (req, res) => {
 
 router.patch('/:id/status', requireAuth, async (req, res) => {
   const { status } = req.body as { status: 'PENDING' | 'COMPLETED' | 'CANCELLED' };
+
   try {
-    const sale = await prisma.sale.update({
-      where: { id: req.params.id },
-      data: { status }
+    const result = await prisma.$transaction(async (tx) => {
+      const existingSale = await tx.sale.findUnique({
+        where: { id: req.params.id },
+        include: { saleItems: true }
+      });
+
+      if (!existingSale) throw new Error('Venda não encontrada');
+
+      const oldStatus = existingSale.status;
+
+      // Se não houve mudança de status, retorna a venda atual
+      if (oldStatus === status) return existingSale;
+
+      // Lógica de estoque
+      // 1. Se mudou PARA COMPLETED (de qualquer outro status) -> Deduz estoque
+      if (status === 'COMPLETED' && oldStatus !== 'COMPLETED') {
+        for (const item of existingSale.saleItems) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } }
+          });
+        }
+      }
+      // 2. Se mudou DE COMPLETED (para qualquer outro status) -> Restaura estoque
+      else if (oldStatus === 'COMPLETED' && status !== 'COMPLETED') {
+        for (const item of existingSale.saleItems) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } }
+          });
+        }
+      }
+
+      const updatedSale = await tx.sale.update({
+        where: { id: req.params.id },
+        data: { status }
+      });
+
+      return updatedSale;
     });
-    return res.json(sale);
-  } catch (err) {
-    return res.status(404).json({ message: 'Venda não encontrada' });
+
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(404).json({ message: err.message || 'Erro ao atualizar venda' });
   }
 });
 

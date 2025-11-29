@@ -60,14 +60,16 @@ model VerificationCode {
 
 model Product {
   id             String    @id @default(cuid())
-  gtin           String    @unique
+  gtin           String?   @unique
   name           String
   brand          String
   price          Decimal   @db.Decimal(10, 2)
   cost           Decimal   @db.Decimal(10, 2)
   weight         Decimal   @db.Decimal(10, 2)
+  measureUnit    String    @default("kg")
   stock          Int       @default(0)
   stockMin       Int       @default(0)
+  stockMax       Int       @default(0)
   isActive       Boolean   @default(true)
   promotionCode  String?
   discountPercent Decimal   @db.Decimal(5, 2) @default(0)

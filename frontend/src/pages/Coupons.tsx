@@ -35,9 +35,25 @@ const CouponsPage = () => {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api.post('/tickets', { ...form, isActive: true, usageCount: 0 });
-    setForm({ code: '', discountPercent: 10, description: '', usageLimit: 100 });
-    load();
+    try {
+      await api.post('/tickets', { ...form, isActive: true, usageCount: 0 });
+      setForm({ code: '', discountPercent: 10, description: '', usageLimit: 100 });
+      alert('Cupom criado com sucesso!');
+      load();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Erro ao criar cupom. Verifique se você tem permissão de administrador.');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja desativar este cupom?')) return;
+    try {
+      await api.delete(`/tickets/${id}`);
+      load();
+    } catch (err) {
+      alert('Erro ao desativar cupom');
+    }
   };
 
   return (
@@ -91,7 +107,10 @@ const CouponsPage = () => {
 
         <div className="glass-card p-4 lg:col-span-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-charcoal">Cupons ativos</h2>
+            <div>
+              <h2 className="text-lg font-semibold text-charcoal">Cupons Ativos e Disponíveis</h2>
+              <p className="text-xs text-slate-500">Gerencie as campanhas promocionais ativas no sistema.</p>
+            </div>
             <span className="text-xs text-slate-500">{tickets.length} cupons</span>
           </div>
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -114,6 +133,14 @@ const CouponsPage = () => {
                     {t.isActive ? 'Ativo' : 'Inativo'}
                   </span>
                 </div>
+                {t.isActive && (
+                  <button
+                    onClick={() => handleDelete(t.id)}
+                    className="mt-3 w-full rounded-lg border border-red-100 bg-red-50 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
+                  >
+                    Desativar
+                  </button>
+                )}
               </div>
             ))}
           </div>

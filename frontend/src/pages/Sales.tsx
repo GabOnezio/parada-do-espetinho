@@ -1,7 +1,54 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { QrCode, HandCoins, Banknote, BanknoteArrowUp, Trash, Cookie, Wheat, Apple, Milk, Drumstick, Croissant, Snowflake, GlassWater, Package, Coffee, ChefHat, Candy, Sparkles, ShowerHead, Battery, Flame, ToyBrick, Puzzle, Gamepad2, User, Dices, Popcorn, Circle, Nut, Carrot, Pencil, Book, Trophy, Shirt, Home, Car, Dog, Baby, Heart, Scissors, Refrigerator, Smartphone, Armchair, Gem } from 'lucide-react';
+import {
+  QrCode,
+  HandCoins,
+  Banknote,
+  BanknoteArrowUp,
+  Trash,
+  Cookie,
+  Wheat,
+  Apple,
+  Milk,
+  Drumstick,
+  Croissant,
+  Snowflake,
+  GlassWater,
+  Package,
+  Coffee,
+  ChefHat,
+  Candy,
+  Sparkles,
+  ShowerHead,
+  Battery,
+  Flame,
+  ToyBrick,
+  Puzzle,
+  Gamepad2,
+  User,
+  Dices,
+  Popcorn,
+  Circle,
+  Nut,
+  Carrot,
+  Pencil,
+  Book,
+  Trophy,
+  Shirt,
+  Home,
+  Car,
+  Dog,
+  Baby,
+  Heart,
+  Scissors,
+  Refrigerator,
+  Smartphone,
+  Armchair,
+  Gem
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import api from '../api/client';
 import { addLocalSale, addPendingSale, getPendingSales, getProducts, removePendingSale, saveProducts } from '../utils/idb';
+import { mergeWithSeedProducts, readHiddenSeedGtins } from '../data/productSeeds';
 
 type Product = {
   id: string;
@@ -13,6 +60,7 @@ type Product = {
   isOnPromotion?: boolean;
   cost?: number;
   categoryKey?: string;
+  isSeed?: boolean;
 };
 type CartItem = { product: Product; quantity: number };
 type PixKey = { id: string; type: string; key: string; isDefault: boolean };
@@ -56,48 +104,60 @@ const SALES_STATS_KEY = 'pdv-sales-stats';
 
 const CATEGORY_STORE_KEY = 'productCategories';
 
-const categories = [
-  { key: 'basicos', label: 'Alimentos Básicos', icon: <Wheat size={14} /> },
-  { key: 'hortifruti', label: 'Hortifrúti', icon: <Apple size={14} /> },
-  { key: 'laticinios', label: 'Laticínios & Frios', icon: <Milk size={14} /> },
-  { key: 'carnes', label: 'Carnes & Peixes', icon: <Drumstick size={14} /> },
-  { key: 'paes', label: 'Pães & Panificação', icon: <Croissant size={14} /> },
-  { key: 'congelados', label: 'Alimentos Congelados', icon: <Snowflake size={14} /> },
-  { key: 'bebidas', label: 'Bebidas', icon: <GlassWater size={14} /> },
-  { key: 'processados', label: 'Alimentos Processados', icon: <Package size={14} /> },
-  { key: 'ingredientes', label: 'Ingredientes Culinários', icon: <ChefHat size={14} /> },
-  { key: 'ultraprocessados', label: 'Ultraprocessados', icon: <Candy size={14} /> },
-  { key: 'limpeza', label: 'Produtos de Limpeza', icon: <Sparkles size={14} /> },
-  { key: 'higiene', label: 'Higiene Pessoal', icon: <ShowerHead size={14} /> },
-  { key: 'eletronicos', label: 'Eletrônicos', icon: <Battery size={14} /> },
-  { key: 'cafe', label: 'Bebidas Quentes', icon: <Coffee size={14} /> },
-  { key: 'tabacaria', label: 'Tabacaria & Fumo', icon: <Flame size={14} /> },
-  { key: 'brinquedos_infantis', label: 'Brinquedos Infantis', icon: <ToyBrick size={14} /> },
-  { key: 'brinquedos_educativos', label: 'Brinquedos Educativos', icon: <Puzzle size={14} /> },
-  { key: 'brinquedos_externos', label: 'Brinquedos Externos', icon: <Gamepad2 size={14} /> },
-  { key: 'bonecas_figures', label: 'Bonecas & Action Figures', icon: <User size={14} /> },
-  { key: 'jogos_board', label: 'Jogos & Board Games', icon: <Dices size={14} /> },
-  { key: 'salgadinhos', label: 'Salgadinhos & Snacks', icon: <Popcorn size={14} /> },
-  { key: 'salgadinhos_milho', label: 'Salgadinhos de Milho', icon: <Circle size={14} /> },
-  { key: 'salgadinhos_batata', label: 'Salgadinhos de Batata', icon: <Circle size={14} /> },
-  { key: 'amendoins_petiscos', label: 'Amendoins & Petiscos', icon: <Nut size={14} /> },
-  { key: 'snacks_saudaveis', label: 'Snacks Saudáveis', icon: <Carrot size={14} /> },
-  { key: 'papelaria', label: 'Papelaria', icon: <Pencil size={14} /> },
-  { key: 'livros_midias', label: 'Livros & Mídias', icon: <Book size={14} /> },
-  { key: 'esportes', label: 'Esportes & Lazer', icon: <Trophy size={14} /> },
-  { key: 'moda', label: 'Moda & Vestuário', icon: <Shirt size={14} /> },
-  { key: 'casa_jardim', label: 'Casa & Jardim', icon: <Home size={14} /> },
-  { key: 'automotivo', label: 'Automotivo', icon: <Car size={14} /> },
-  { key: 'pet', label: 'Pet Shop', icon: <Dog size={14} /> },
-  { key: 'bebes', label: 'Bebês & Crianças', icon: <Baby size={14} /> },
-  { key: 'saude', label: 'Saúde & Farmácia', icon: <Heart size={14} /> },
-  { key: 'beleza', label: 'Beleza & Perfumaria', icon: <Scissors size={14} /> },
-  { key: 'eletrodomesticos', label: 'Eletrodomésticos', icon: <Refrigerator size={14} /> },
-  { key: 'tecnologia', label: 'Tecnologia', icon: <Smartphone size={14} /> },
-  { key: 'moveis', label: 'Móveis', icon: <Armchair size={14} /> },
-  { key: 'joias', label: 'Joias & Relógios', icon: <Gem size={14} /> },
-  { key: 'bolachas', label: 'Bolachas & Cookies', icon: <Cookie size={14} /> }
+type CategoryMeta = {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+const categories: CategoryMeta[] = [
+  { key: 'basicos', label: 'Alimentos Básicos', icon: Wheat },
+  { key: 'hortifruti', label: 'Hortifrúti', icon: Apple },
+  { key: 'laticinios', label: 'Laticínios & Frios', icon: Milk },
+  { key: 'carnes', label: 'Carnes & Peixes', icon: Drumstick },
+  { key: 'paes', label: 'Pães & Panificação', icon: Croissant },
+  { key: 'congelados', label: 'Alimentos Congelados', icon: Snowflake },
+  { key: 'bebidas', label: 'Bebidas', icon: GlassWater },
+  { key: 'processados', label: 'Alimentos Processados', icon: Package },
+  { key: 'ingredientes', label: 'Ingredientes Culinários', icon: ChefHat },
+  { key: 'ultraprocessados', label: 'Ultraprocessados', icon: Candy },
+  { key: 'limpeza', label: 'Produtos de Limpeza', icon: Sparkles },
+  { key: 'higiene', label: 'Higiene Pessoal', icon: ShowerHead },
+  { key: 'eletronicos', label: 'Eletrônicos', icon: Battery },
+  { key: 'cafe', label: 'Bebidas Quentes', icon: Coffee },
+  { key: 'tabacaria', label: 'Tabacaria & Fumo', icon: Flame },
+  { key: 'brinquedos_infantis', label: 'Brinquedos Infantis', icon: ToyBrick },
+  { key: 'brinquedos_educativos', label: 'Brinquedos Educativos', icon: Puzzle },
+  { key: 'brinquedos_externos', label: 'Brinquedos Externos', icon: Gamepad2 },
+  { key: 'bonecas_figures', label: 'Bonecas & Action Figures', icon: User },
+  { key: 'jogos_board', label: 'Jogos & Board Games', icon: Dices },
+  { key: 'salgadinhos', label: 'Salgadinhos & Snacks', icon: Popcorn },
+  { key: 'salgadinhos_milho', label: 'Salgadinhos de Milho', icon: Circle },
+  { key: 'salgadinhos_batata', label: 'Salgadinhos de Batata', icon: Circle },
+  { key: 'amendoins_petiscos', label: 'Amendoins & Petiscos', icon: Nut },
+  { key: 'snacks_saudaveis', label: 'Snacks Saudáveis', icon: Carrot },
+  { key: 'papelaria', label: 'Papelaria', icon: Pencil },
+  { key: 'livros_midias', label: 'Livros & Mídias', icon: Book },
+  { key: 'esportes', label: 'Esportes & Lazer', icon: Trophy },
+  { key: 'moda', label: 'Moda & Vestuário', icon: Shirt },
+  { key: 'casa_jardim', label: 'Casa & Jardim', icon: Home },
+  { key: 'automotivo', label: 'Automotivo', icon: Car },
+  { key: 'pet', label: 'Pet Shop', icon: Dog },
+  { key: 'bebes', label: 'Bebês & Crianças', icon: Baby },
+  { key: 'saude', label: 'Saúde & Farmácia', icon: Heart },
+  { key: 'beleza', label: 'Beleza & Perfumaria', icon: Scissors },
+  { key: 'eletrodomesticos', label: 'Eletrodomésticos', icon: Refrigerator },
+  { key: 'tecnologia', label: 'Tecnologia', icon: Smartphone },
+  { key: 'moveis', label: 'Móveis', icon: Armchair },
+  { key: 'joias', label: 'Joias & Relógios', icon: Gem },
+  { key: 'bolachas', label: 'Bolachas & Cookies', icon: Cookie }
 ];
+
+const renderCategoryIcon = (meta: CategoryMeta | undefined, size = 18) => {
+  if (!meta?.icon) return null;
+  const IconComp = meta.icon;
+  return <IconComp size={size} color="white" />;
+};
 
 const categoryColors: Record<string, string> = {
   basicos: '#fbbf24',
@@ -145,6 +205,7 @@ const categoryColors: Record<string, string> = {
 const SalesPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadedRemote, setLoadedRemote] = useState(false);
+  const [hiddenSeedGtins] = useState<string[]>(() => readHiddenSeedGtins());
   const [search, setSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -205,14 +266,38 @@ const SalesPage = () => {
       }
     }
     // Depois busca remoto e atualiza caches
+    const mergeSeeds = (list: Product[]) =>
+      mergeWithSeedProducts<Product>(list, new Set(hiddenSeedGtins)) as Product[];
+
     const loadRemote = async () => {
       try {
         const res = await api.get('/products');
-        setProducts(res.data);
-        localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(res.data));
-        await saveProducts(res.data);
+        const merged = mergeSeeds(res.data);
+        setProducts(merged);
+        localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(merged));
+        await saveProducts(merged);
         setLoadedRemote(true);
       } catch {
+        const cached = localStorage.getItem(PRODUCTS_CACHE_KEY);
+        let fallback: Product[] = [];
+        if (cached) {
+          try {
+            fallback = JSON.parse(cached);
+          } catch {
+            fallback = [];
+          }
+        }
+        const mergedFallback = mergeSeeds(fallback);
+        if (!mergedFallback.length) {
+          const seeded = mergeSeeds([]);
+          setProducts(seeded);
+          localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(seeded));
+          await saveProducts(seeded);
+        } else {
+          setProducts(mergedFallback);
+          localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(mergedFallback));
+          await saveProducts(mergedFallback);
+        }
         setLoadedRemote(false);
       }
     };
@@ -514,23 +599,35 @@ const SalesPage = () => {
     if (matched) {
       addToCart(matched);
       setSearch('');
-      setShowSuggestions(false);
+      setShowSuggestions(true);
     }
   }, [search, products]);
 
   const bestSellers = useMemo(() => {
-    const entries = Object.entries(stats)
+    const ranked = Object.entries(stats)
       .map(([id, count]) => ({ id, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
+      .slice(0, 10)
       .map((entry) => products.find((p) => p.id === entry.id))
       .filter(Boolean) as Product[];
-    return entries.length ? entries : products.slice(0, 5);
+    if (ranked.length >= 10) return ranked;
+    const fallback = products
+      .filter((p) => !ranked.some((rankedItem) => rankedItem.id === p.id))
+      .slice(0, Math.max(0, 10 - ranked.length));
+    return [...ranked, ...fallback];
   }, [stats, products]);
 
   const getCategory = (p: Product) => {
-    const key = categoryMap[p.id] || categoryMap[p.gtin] || p.categoryKey;
-    return { key, meta: categories.find((c) => c.key === key) };
+    // prioridade: categoria que veio do backend (BD)
+    const keyFromDb = p.categoryKey;
+
+    // override local (se você ainda quiser usar o map do localStorage)
+    const overrideKey = categoryMap[p.gtin] || categoryMap[p.id];
+
+    const key = overrideKey || keyFromDb;
+    const meta = categories.find((c) => c.key === key);
+
+    return { key, meta };
   };
 
   return (
@@ -567,7 +664,10 @@ const SalesPage = () => {
                       {loadedRemote ? 'Nenhum produto encontrado.' : 'Digite ou escaneie para buscar produtos.'}
                     </div>
                   )}
-                  {(search.trim() ? filteredProducts : bestSellers).map((p) => (
+                  {(search.trim() ? filteredProducts : bestSellers).map((p) => {
+                    const productCategory = getCategory(p);
+                    const meta = productCategory.meta;
+                    return (
                     <button
                       key={p.id}
                       onMouseDown={(e) => e.preventDefault()}
@@ -578,22 +678,26 @@ const SalesPage = () => {
                       }}
                       className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-primary/5"
                     >
-                      <span className="flex items-center gap-2">
-                        {getCategory(p).meta && (
+                      <span className="text-sm font-semibold text-charcoal">{p.name}</span>
+                      <span className="text-xs text-slate-500">GTIN {p.gtin} • {p.brand}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-primary">R$ {Number(p.price).toFixed(2)}</span>
+                        {meta && (
                           <span
-                            className="flex h-5 w-5 items-center justify-center rounded-md text-white text-[10px]"
-                            style={{ backgroundColor: categoryColors[getCategory(p).key || ''] || '#e2e8f0' }}
-                            title={getCategory(p).meta?.label}
+                            className="flex h-6 w-6 items-center justify-center rounded-md text-white"
+                            style={{
+                              backgroundColor: categoryColors[productCategory.key || ''] || '#e2e8f0',
+                              overflow: 'visible'
+                            }}
+                            title={meta.label}
                           >
-                            {getCategory(p).meta?.icon}
+                            {renderCategoryIcon(meta, 16)}
                           </span>
                         )}
-                        <span className="text-sm font-semibold text-charcoal">{p.name}</span>
-                      </span>
-                      <span className="text-xs text-slate-500">{p.brand}</span>
-                      <span className="text-xs font-semibold text-primary">R$ {Number(p.price).toFixed(2)}</span>
+                      </div>
                     </button>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </div>
@@ -604,63 +708,70 @@ const SalesPage = () => {
               <span className="text-xs text-slate-500">{cart.length} itens</span>
             </div>
             <div className="mt-3 grid max-h-56 grid-cols-1 gap-3 overflow-y-auto">
-              {cart.map((item) => (
-                <div
-                  key={item.product.id}
-                  className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 text-base font-semibold text-charcoal">
-                        {getCategory(item.product).meta && (
-                          <span
-                            className="flex h-6 w-6 items-center justify-center rounded-lg text-white text-xs"
-                            style={{ backgroundColor: categoryColors[getCategory(item.product).key || ''] || '#e2e8f0' }}
-                            title={getCategory(item.product).meta?.label}
-                          >
-                            {getCategory(item.product).meta?.icon}
-                          </span>
-                        )}
-                        <span>{item.product.name}</span>
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        GTIN {item.product.gtin} • {item.product.brand}
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <div className="text-sm font-semibold text-primary">
-                          R$ {Number(item.product.price).toFixed(2)}
+              {cart.map((item) => {
+                const itemCategory = getCategory(item.product);
+                const meta = itemCategory.meta;
+                return (
+                  <div
+                    key={item.product.id}
+                    className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 text-base font-semibold text-charcoal">
+                          {meta && (
+                            <span
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
+                              style={{
+                                backgroundColor: categoryColors[itemCategory.key || ''] || '#e2e8f0',
+                                overflow: 'visible'
+                              }}
+                              title={meta.label}
+                            >
+                              {renderCategoryIcon(meta, 18)}
+                            </span>
+                          )}
+                          <span>{item.product.name}</span>
                         </div>
-                        <div className="text-[11px] text-slate-500">
-                          Taxa individual: R$ {Number(item.product.cost || 0).toFixed(2)}
+                        <div className="text-xs text-slate-500">
+                          GTIN {item.product.gtin} • {item.product.brand}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            min={1}
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const val = Math.max(1, Number(e.target.value) || 1);
-                              setCart((prev) =>
-                                prev.map((c) =>
-                                  c.product.id === item.product.id ? { ...c, quantity: val } : c
-                                )
-                              );
-                            }}
-                            className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-right text-xs"
-                          />
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <div className="text-sm font-semibold text-primary">
+                            R$ {Number(item.product.price).toFixed(2)}
+                          </div>
+                          <div className="text-[11px] text-slate-500">
+                            Taxa individual: R$ {Number(item.product.cost || 0).toFixed(2)}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={1}
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const val = Math.max(1, Number(e.target.value) || 1);
+                                setCart((prev) =>
+                                  prev.map((c) =>
+                                    c.product.id === item.product.id ? { ...c, quantity: val } : c
+                                  )
+                                );
+                              }}
+                              className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-right text-xs"
+                            />
+                          </div>
                         </div>
                       </div>
+                      <button
+                        onClick={() => removeFromCart(item.product.id)}
+                        className="rounded-lg bg-[#b91c1c] px-3 py-2 text-white transition hover:brightness-110"
+                        title="Remover item"
+                      >
+                        <Trash size={18} className="text-black" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => removeFromCart(item.product.id)}
-                      className="rounded-lg bg-[#b91c1c] px-3 py-2 text-white transition hover:brightness-110"
-                      title="Remover item"
-                    >
-                      <Trash size={18} className="text-black" />
-                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {cart.length === 0 && <p className="text-sm text-slate-500">Pesquise ou escaneie para adicionar itens.</p>}
             </div>
           </div>
@@ -673,33 +784,51 @@ const SalesPage = () => {
               <span className="text-xs text-slate-500">{cart.length} itens</span>
             </div>
             <div className="mt-3 space-y-2 max-h-56 overflow-y-auto">
-              {cart.map((item) => (
-                <div
-                  key={item.product.id}
-                  className="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
-                >
-                  <div className="flex items-start justify-between gap-2 text-sm font-semibold text-charcoal">
-                    <div className="flex flex-col">
-                      <span>{item.product.name}</span>
-                      <span className="text-xs text-slate-500">
-                        {item.product.brand} • R$ {Number(item.product.price).toFixed(2)} {item.quantity > 1 && `x${item.quantity}`}
-                      </span>
-                      {item.product.cost ? (
-                        <span className="text-[11px] text-slate-500">
-                          Taxa individual: R$ {Number(item.product.cost).toFixed(2)}
-                        </span>
-                      ) : null}
+              {cart.map((item) => {
+                const itemCategory = getCategory(item.product);
+                const meta = itemCategory.meta;
+                return (
+                  <div
+                    key={item.product.id}
+                    className="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
+                  >
+                    <div className="flex items-start justify-between gap-2 text-sm font-semibold text-charcoal">
+                      <div className="flex items-start gap-2">
+                        {meta && (
+                          <span
+                            className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-md text-white"
+                            style={{
+                              backgroundColor: categoryColors[itemCategory.key || ''] || '#e2e8f0',
+                              overflow: 'visible'
+                            }}
+                            title={meta.label}
+                          >
+                            {renderCategoryIcon(meta, 16)}
+                          </span>
+                        )}
+                        <div className="flex flex-col">
+                          <span>{item.product.name}</span>
+                          <span className="text-xs text-slate-500">
+                            {item.product.brand} • R$ {Number(item.product.price).toFixed(2)} {item.quantity > 1 && `x${item.quantity}`}
+                          </span>
+                          {item.product.cost ? (
+                            <span className="text-[11px] text-slate-500">
+                              Taxa individual: R$ {Number(item.product.cost).toFixed(2)}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeFromCart(item.product.id)}
+                        className="rounded-lg bg-[#b91c1c] px-2 py-1 text-white transition hover:brightness-110"
+                        title="Remover item"
+                      >
+                        <Trash size={16} className="text-black" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => removeFromCart(item.product.id)}
-                      className="rounded-lg bg-[#b91c1c] px-2 py-1 text-white transition hover:brightness-110"
-                      title="Remover item"
-                    >
-                      <Trash size={16} className="text-black" />
-                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {cart.length === 0 && <p className="text-sm text-slate-500">Pesquise ou escaneie para adicionar itens.</p>}
             </div>
 

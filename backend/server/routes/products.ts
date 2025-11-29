@@ -13,12 +13,12 @@ router.get('/', requireAuth, async (req, res) => {
       isActive: true,
       ...(q
         ? {
-            OR: [
-              { name: { contains: q } },
-              { gtin: { contains: q } },
-              { brand: { contains: q } }
-            ]
-          }
+          OR: [
+            { name: { contains: q } },
+            { gtin: { contains: q } },
+            { brand: { contains: q } }
+          ]
+        }
         : {}),
       ...(brand ? { brand: { contains: brand } } : {}),
       ...(tag ? { tags: { contains: tag } } : {}),
@@ -46,10 +46,12 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     weight?: number;
     stock?: number;
     stockMin?: number;
+    stockMax?: number;
+    measureUnit?: string;
   };
 
-  if (!name || !brand || !gtin || price === undefined || cost === undefined || weight === undefined) {
-    return res.status(400).json({ message: 'Nome, marca, GTIN, preço, custo e peso são obrigatórios' });
+  if (!name || !brand || price === undefined || cost === undefined || weight === undefined) {
+    return res.status(400).json({ message: 'Nome, marca, preço, custo e peso são obrigatórios' });
   }
 
   try {
@@ -61,8 +63,10 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         price,
         cost,
         weight,
+        measureUnit: req.body.measureUnit || 'kg',
         stock: stock ?? 0,
-        stockMin: stockMin ?? 0
+        stockMin: stockMin ?? 0,
+        stockMax: stock ?? 0 // StockMax defaults to initial Stock
       }
     });
     return res.status(201).json(product);
@@ -71,6 +75,15 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       return res.status(409).json({ message: 'GTIN já cadastrado' });
     }
     return res.status(400).json({ message: 'Erro ao salvar produto' });
+  }
+});
+
+router.delete('/', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    await prisma.product.updateMany({ data: { isActive: false, stock: 0 } });
+    return res.json({ message: 'Todos os produtos foram limpos do estoque.' });
+  } catch (err) {
+    return res.status(500).json({ message: 'Erro ao limpar estoque de produtos.' });
   }
 });
 
