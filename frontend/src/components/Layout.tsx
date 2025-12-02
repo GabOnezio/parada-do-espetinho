@@ -8,6 +8,7 @@ const navItems = [
   { to: '/admin/produtos', label: 'Produtos' },
   { to: '/admin/clientes', label: 'Clientes' },
   { to: '/admin/cupons', label: 'Cupons' },
+  { to: '/admin/skus', label: 'Histórico de SKU' },
   { to: '/admin/pix', label: 'Pix' },
   { to: '/admin/analytics', label: 'Analytics' },
   { to: '/admin/funcionarios', label: 'Funcionários' },

@@ -84,6 +84,8 @@ const ProductsPage = () => {
     name: '',
     brand: '',
     gtin: '',
+    sku: '',
+    generateSku: false,
     price: 0,
     cost: 0,
     weight: 0,
@@ -101,6 +103,7 @@ const ProductsPage = () => {
     name: '',
     brand: '',
     gtin: '',
+    sku: '',
     price: 0,
     cost: 0,
     weight: 0,
@@ -332,6 +335,28 @@ const ProductsPage = () => {
     return Number(numericValue) / 100;
   };
 
+  const lookupSku = async (code: string) => {
+    if (!code) return null;
+    try {
+      const res = await api.get(`/skus/${encodeURIComponent(code)}`);
+      return res.data;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const generateSkuFrom = (data: { name: string; brand: string; weight: number; measureUnit: string }) => {
+    // simple SKU: slug(name)-slug(brand)-weight+unit
+    const slug = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    const w = data.weight ? String(data.weight).replace(/\D/g, '') : '0';
+    return `${slug(data.name)}-${slug(data.brand)}-${w}${data.measureUnit || 'un'}`;
+  };
+
   const load = async (query?: string, customHidden?: Set<string>) => {
     setLoading(true);
     try {
@@ -390,7 +415,27 @@ const ProductsPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { categoryKey, ...payload } = form;
+      const { categoryKey, generateSku, ...payload } = form as any;
+      // If requested, generate SKU from fields
+      let skuToUse = payload.sku;
+      if (generateSku) {
+        skuToUse = generateSkuFrom({ name: payload.name, brand: payload.brand, weight: payload.weight, measureUnit: payload.measureUnit });
+        payload.sku = skuToUse;
+        // register to history
+        try {
+          await api.post('/skus', {
+            sku: skuToUse,
+            gtin: payload.gtin,
+            name: payload.name,
+            brand: payload.brand,
+            price: payload.price,
+            tax: payload.cost,
+            measureUnit: payload.measureUnit
+          });
+        } catch (err) {
+          // ignore errors
+        }
+      }
       const chosenCategory = categoryKey;
       await api.post('/products', payload);
       setForm({
@@ -409,7 +454,7 @@ const ProductsPage = () => {
       const updated = await api.get('/products', { params: { q: search } });
       applyProducts(updated.data);
       // associa categoria ao produto criado
-      const created = (updated.data as Product[]).find((p: Product) => p.gtin === form.gtin || p.name === form.name);
+      const created = (updated.data as Product[]).find((p: Product) => p.gtin === form.gtin || p.name === form.name || p.sku === skuToUse);
       if (created) {
         setCategoryMap((prev) => {
           const next = { ...prev, [created.id]: chosenCategory, [created.gtin]: chosenCategory };
@@ -789,12 +834,71 @@ const ProductsPage = () => {
           </div>
           {!isNewProductCollapsed && (
             <form className="relative z-20 mt-4 space-y-3" onSubmit={handleSubmit}>
-              <input
-                placeholder="GTIN (Opcional)"
-                value={form.gtin}
-                onChange={(e) => setForm((prev) => ({ ...prev, gtin: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                <div className="md:col-span-1">
+                  <input
+                    placeholder="GTIN (Opcional)"
+                    value={form.gtin}
+                    onBlur={async (e) => {
+                      const val = e.currentTarget.value.trim();
+                      if (!val) return;
+                      const found = await lookupSku(val);
+                      if (found) {
+                        setForm((prev) => ({
+                          ...prev,
+                          name: found.name || prev.name,
+                          brand: found.brand || prev.brand,
+                          price: found.price ? Number(found.price) : prev.price,
+                          cost: prev.cost,
+                          weight: prev.measureUnit && prev.measureUnit === found.measureUnit ? prev.weight : prev.weight,
+                          measureUnit: found.measureUnit || prev.measureUnit,
+                          gtin: found.gtin || prev.gtin,
+                          sku: found.sku || prev.sku
+                        }));
+                      }
+                    }}
+                    onChange={(e) => setForm((prev) => ({ ...prev, gtin: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div className="md:col-span-1">
+                  <input
+                    placeholder="SKU (Opcional)"
+                    value={form.sku}
+                    onBlur={async (e) => {
+                      const val = e.currentTarget.value.trim();
+                      if (!val) return;
+                      const found = await lookupSku(val);
+                      if (found) {
+                        setForm((prev) => ({
+                          ...prev,
+                          name: found.name || prev.name,
+                          brand: found.brand || prev.brand,
+                          price: found.price ? Number(found.price) : prev.price,
+                          cost: prev.cost,
+                          weight: prev.measureUnit && prev.measureUnit === found.measureUnit ? prev.weight : prev.weight,
+                          measureUnit: found.measureUnit || prev.measureUnit,
+                          gtin: found.gtin || prev.gtin,
+                          sku: found.sku || prev.sku
+                        }));
+                      }
+                    }}
+                    onChange={(e) => setForm((prev) => ({ ...prev, sku: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div className="md:col-span-1 flex items-center gap-2">
+                  <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={form.generateSku}
+                      onChange={(e) => setForm((prev) => ({ ...prev, generateSku: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <span>Gerar SKU</span>
+                  </label>
+                </div>
+              </div>
               <input
                 placeholder="NOME"
                 value={form.name}

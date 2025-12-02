@@ -16,6 +16,7 @@ import analyticsRoutes from './routes/analytics.js';
 import usersRoutes from './routes/users.js';
 import mpPixRoutes from './routes/mpPix.js';
 import paymentConfigRoutes from './routes/paymentConfig.js';
+import skusRoutes from './routes/skus.js';
 
 // Carrega .env a partir da raiz do monorepo ou do workspace backend
 const __filename = fileURLToPath(import.meta.url);
@@ -128,6 +129,7 @@ app.use('/api', mpPixRoutes);
 app.use('/api/payment-config', paymentConfigRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/skus', skusRoutes);
 
 app.use((_req, res) => {
   return res.status(404).json({ message: 'Not found' });

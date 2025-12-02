@@ -6,6 +6,7 @@ import DashboardPage from './pages/Dashboard';
 import ProductsPage from './pages/Products';
 import ClientsPage from './pages/Clients';
 import CouponsPage from './pages/Coupons';
+import SkuHistoryPage from './pages/SkuHistory';
 import SalesPage from './pages/Sales';
 import PixPage from './pages/Pix';
 import AnalyticsPage from './pages/Analytics';
@@ -43,6 +44,7 @@ const App = () => {
           <Route path="produtos" element={<ProductsPage />} />
           <Route path="clientes" element={<ClientsPage />} />
           <Route path="cupons" element={<CouponsPage />} />
+          <Route path="skus" element={<SkuHistoryPage />} />
           <Route path="pix" element={<PixPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="funcionarios" element={<EmployeesPage />} />
