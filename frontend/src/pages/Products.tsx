@@ -41,6 +41,9 @@ type Product = {
   isActive?: boolean;
   categoryKey?: CategoryKey;
   isSeed?: boolean;
+  stockMin?: number;
+  stockMax?: number;
+  measureUnit?: string;
 };
 
 type Category = {
@@ -85,6 +88,9 @@ const ProductsPage = () => {
     cost: 0,
     weight: 0,
     stock: 0,
+    stockMin: 0,
+    stockMax: 0,
+    measureUnit: 'kg',
     categoryKey: '' as CategoryKey
   });
   const [catOpen, setCatOpen] = useState(false);
@@ -99,6 +105,9 @@ const ProductsPage = () => {
     cost: 0,
     weight: 0,
     stock: 0,
+    stockMin: 0,
+    stockMax: 0,
+    measureUnit: 'kg',
     categoryKey: '' as CategoryKey
   });
   const [editCatOpen, setEditCatOpen] = useState(false);
@@ -133,12 +142,12 @@ const ProductsPage = () => {
   const [isNewProductCollapsed, setIsNewProductCollapsed] = useState(false);
   const [tooltipInfo, setTooltipInfo] = useState<
     | {
-        id: string;
-        label: string;
-        description?: string;
-        x: number;
-        y: number;
-      }
+      id: string;
+      label: string;
+      description?: string;
+      x: number;
+      y: number;
+    }
     | null
   >(null);
 
@@ -198,9 +207,8 @@ const ProductsPage = () => {
           <>
             <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} aria-label="Fechar categorias" />
             <div
-              className={`absolute z-40 w-full max-h-64 overflow-y-auto border border-slate-200 bg-white shadow-lg ${
-                dropUp ? 'bottom-[102%] rounded-t-xl' : 'mt-1 rounded-b-xl'
-              }`}
+              className={`absolute z-40 w-full max-h-64 overflow-y-auto border border-slate-200 bg-white shadow-lg ${dropUp ? 'bottom-[102%] rounded-t-xl' : 'mt-1 rounded-b-xl'
+                }`}
               style={
                 dropUp
                   ? { borderTopLeftRadius: '12px', borderTopRightRadius: '12px', borderBottomLeftRadius: '4px', borderBottomRightRadius: '4px' }
@@ -216,10 +224,10 @@ const ProductsPage = () => {
                     setFilter?.(c.label);
                     setOpen(false);
                   }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-primary/5"
-                title={`${c.label} – ${c.description}`}
-                style={{ borderRadius: '10px', opacity: 0.78 }}
-              >
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-primary/5"
+                  title={`${c.label} – ${c.description}`}
+                  style={{ borderRadius: '10px', opacity: 0.78 }}
+                >
                   <span
                     className="flex h-6 w-6 items-center justify-center rounded-lg text-white"
                     style={{ backgroundColor: c.color || '#e2e8f0' }}
@@ -311,6 +319,19 @@ const ProductsPage = () => {
     });
   };
 
+  const formatCurrency = (value: number) => {
+    if (!value) return '0,00';
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+
+  const parseCurrency = (value: string) => {
+    const numericValue = value.replace(/\D/g, '');
+    return Number(numericValue) / 100;
+  };
+
   const load = async (query?: string, customHidden?: Set<string>) => {
     setLoading(true);
     try {
@@ -380,6 +401,9 @@ const ProductsPage = () => {
         cost: 0,
         weight: 0,
         stock: 0,
+        stockMin: 0,
+        stockMax: 0,
+        measureUnit: 'kg',
         categoryKey: (categories[0]?.key as CategoryKey) || ''
       });
       const updated = await api.get('/products', { params: { q: search } });
@@ -452,6 +476,9 @@ const ProductsPage = () => {
       cost: p.cost || 0,
       weight: p.weight || 0,
       stock: p.stock,
+      stockMin: p.stockMin || 0,
+      stockMax: p.stockMax || 0,
+      measureUnit: p.measureUnit || 'kg',
       categoryKey: cat
     });
   };
@@ -594,6 +621,41 @@ const ProductsPage = () => {
 
   return (
     <div className="space-y-6">
+      <style>{`
+        .custom-range-thumb::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: linear-gradient(90deg, #f97316 50%, #eab308 50%);
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          margin-top: -6px; /* Adjust for track height */
+        }
+        .custom-range-thumb::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: linear-gradient(90deg, #f97316 50%, #eab308 50%);
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .custom-range-thumb::-webkit-slider-runnable-track {
+          width: 100%;
+          height: 6px;
+          background: #e2e8f0;
+          border-radius: 9999px;
+        }
+        .custom-range-thumb::-moz-range-track {
+          width: 100%;
+          height: 6px;
+          background: #e2e8f0;
+          border-radius: 9999px;
+        }
+      `}</style>
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm text-slate-500">Catálogo</p>
@@ -609,8 +671,13 @@ const ProductsPage = () => {
               <p className="text-xs text-slate-500">Personalize setores para organizar os produtos do PDV.</p>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={handleSeedMerge} className="btn-secondary" title="Adicionar categorias padrão">
-                Restaurar / Mesclar categorias padrão
+              <button
+                type="button"
+                onClick={() => setShowCategoryGrid(true)}
+                className="btn-secondary"
+                title="Ver grid de categorias"
+              >
+                GRID DE CATEGORIAS
               </button>
               <button
                 type="button"
@@ -628,16 +695,7 @@ const ProductsPage = () => {
           </div>
           {!isCreateCategoryCollapsed && (
             <>
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCategoryGrid(true)}
-                  className="btn-secondary"
-                  title="Ver grid de categorias"
-                >
-                  GRID DE CATEGORIAS
-                </button>
-              </div>
+
               <form className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2" onSubmit={handleCreateCategory}>
                 <div>
                   <label className="text-xs uppercase tracking-wide text-slate-500">Nome</label>
@@ -731,112 +789,146 @@ const ProductsPage = () => {
           </div>
           {!isNewProductCollapsed && (
             <form className="relative z-20 mt-4 space-y-3" onSubmit={handleSubmit}>
-            <input
-              placeholder="GTIN"
-              value={form.gtin}
-              onChange={(e) => setForm((prev) => ({ ...prev, gtin: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              required
-            />
-            <input
-              placeholder="NOME"
-              value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              required
-            />
-            <input
-              placeholder="MARCA"
-              value={form.brand}
-              onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              required
-            />
-            <div className="flex gap-2">
-              <div className="w-1/2">
-                <label className="text-xs uppercase tracking-wide text-slate-500">Valor do produto</label>
-                <div className="relative mt-1">
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    value={form.price}
-                    onChange={(e) => setForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
-                  />
-                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
+              <input
+                placeholder="GTIN (Opcional)"
+                value={form.gtin}
+                onChange={(e) => setForm((prev) => ({ ...prev, gtin: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <input
+                placeholder="NOME"
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                required
+              />
+              <input
+                placeholder="MARCA"
+                value={form.brand}
+                onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                required
+              />
+              <div className="flex gap-2">
+                <div className="w-1/2">
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Valor do produto</label>
+                  <div className="relative mt-1">
+                    <input
+                      type="text"
+                      placeholder="0,00"
+                      value={formatCurrency(form.price)}
+                      onChange={(e) => setForm((prev) => ({ ...prev, price: parseCurrency(e.target.value) }))}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                    />
+                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
+                  </div>
+                </div>
+                <div className="w-1/2">
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Taxa individual</label>
+                  <div className="relative mt-1">
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      value={form.cost}
+                      onChange={(e) => setForm((prev) => ({ ...prev, cost: Number(e.target.value) }))}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                    />
+                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
+                  </div>
                 </div>
               </div>
-              <div className="w-1/2">
-                <label className="text-xs uppercase tracking-wide text-slate-500">Taxa individual</label>
-                <div className="relative mt-1">
+              <div className="flex gap-2">
+                <div className="w-1/2">
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Peso / Unidade</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      value={form.weight}
+                      onChange={(e) => setForm((prev) => ({ ...prev, weight: Number(e.target.value) }))}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                    />
+                    <select
+                      value={form.measureUnit}
+                      onChange={(e) => setForm((prev) => ({ ...prev, measureUnit: e.target.value }))}
+                      className="mt-1 w-24 rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm focus:border-primary focus:outline-none"
+                    >
+                      <option value="kg">kg</option>
+                      <option value="g">g</option>
+                      <option value="mg">mg</option>
+                      <option value="l">l</option>
+                      <option value="ml">ml</option>
+                      <option value="un">un</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="w-1/2">
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Estoque Inicial</label>
                   <input
                     type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    value={form.cost}
-                    onChange={(e) => setForm((prev) => ({ ...prev, cost: Number(e.target.value) }))}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                    placeholder="0"
+                    value={form.stock}
+                    onChange={(e) => setForm((prev) => ({ ...prev, stock: Number(e.target.value) }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
                   />
-                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
                 </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <div className="w-1/2">
-                <label className="text-xs uppercase tracking-wide text-slate-500">Peso (kg)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="0,00"
-                  value={form.weight}
-                  onChange={(e) => setForm((prev) => ({ ...prev, weight: Number(e.target.value) }))}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                />
+              <div className="flex gap-2">
+                <div className="w-full">
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Estoque Mínimo (Alerta)</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="range"
+                      min="1"
+                      max="1000"
+                      value={form.stockMin}
+                      onChange={(e) => setForm((prev) => ({ ...prev, stockMin: Number(e.target.value) }))}
+                      className="custom-range-thumb w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer"
+                    />
+                    <input
+                      type="number"
+                      value={form.stockMin}
+                      onChange={(e) => setForm((prev) => ({ ...prev, stockMin: Number(e.target.value) }))}
+                      className="w-16 rounded-xl border border-slate-200 bg-white px-2 py-1 text-sm text-center focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="w-1/2">
-                <label className="text-xs uppercase tracking-wide text-slate-500">Estoque</label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={form.stock}
-                  onChange={(e) => setForm((prev) => ({ ...prev, stock: Number(e.target.value) }))}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                />
-              </div>
-            </div>
-            {renderCategoryDropdown(
-              form.categoryKey,
-              (val) => setForm((prev) => ({ ...prev, categoryKey: val })),
-              catOpen,
-              setCatOpen,
-              false,
-              catFilter,
-              setCatFilter
-            )}
-            <button type="submit" className="btn-primary w-full">
-              Salvar
-            </button>
+              {renderCategoryDropdown(
+                form.categoryKey,
+                (val) => setForm((prev) => ({ ...prev, categoryKey: val })),
+                catOpen,
+                setCatOpen,
+                false,
+                catFilter,
+                setCatFilter
+              )}
+              <button type="submit" className="btn-primary w-full">
+                Salvar
+              </button>
             </form>
           )}
         </div>
 
-        <div className="glass-card p-4">
-          <div className="mb-3 flex items-center justify-center">
-            <div className="flex gap-2">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && load(search)}
-                placeholder="Nome, GTIN, marca..."
-                className="w-96 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
-              <button className="btn-secondary" onClick={() => load(search)}>
-                Buscar
-              </button>
-            </div>
+        <div className="mb-3 flex items-center justify-center">
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && load(search)}
+              placeholder="Nome, GTIN, marca..."
+              className="w-96 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
+            <button className="btn-secondary" onClick={() => load(search)}>
+              Buscar
+            </button>
           </div>
+        </div>
 
+        <div className="glass-card p-4">
           <div className="relative flex items-center justify-center">
             <span className="absolute left-0 text-xs text-slate-500">{products.length} itens</span>
             <h2 className="text-lg font-semibold text-charcoal">Lista</h2>
@@ -870,14 +962,63 @@ const ProductsPage = () => {
                   <div>
                     <div className="text-sm font-semibold text-charcoal">{p.name}</div>
                     <div className="text-xs text-slate-500">
-                      GTIN {p.gtin} • {p.brand}
+                      GTIN {p.gtin || 'N/A'} • {p.brand} • {p.weight} {p.measureUnit || 'kg'}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="text-right text-sm font-semibold text-primary">
-                    R$ {Number(p.price).toFixed(2)}
-                    <div className="text-xs text-slate-500">Estoque {p.stock}</div>
+                  <div className="text-right text-sm font-semibold text-primary flex flex-col items-end gap-1">
+                    <span>R$ {Number(p.price).toFixed(2)}</span>
+                    <div className={`text-xs px-2 py-0.5 rounded ${(() => {
+                      const min = p.stockMin || 0;
+                      const max = p.stockMax || 0;
+                      const stock = p.stock;
+                      if (stock <= min) return 'bg-red-100 text-red-600 animate-pulse font-bold border border-red-200';
+                      const geometricMean = Math.sqrt(min * max);
+                      if (stock <= geometricMean) return 'bg-amber-100 text-amber-600 font-bold border border-amber-200';
+                      return 'bg-green-100 text-green-600 font-bold border border-green-200';
+                    })()}`}>
+                      Estoque {p.stock}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="range"
+                        min="1"
+                        max="1000"
+                        value={p.stockMin || 0}
+                        onChange={async (e) => {
+                          const val = Number(e.target.value);
+                          // Optimistic update
+                          const updated = products.map(prod => prod.id === p.id ? { ...prod, stockMin: val } : prod);
+                          setProducts(updated);
+                          try {
+                            await api.put(`/products/${p.id}`, { stockMin: val });
+                          } catch (err) {
+                            // revert on error if needed, but keeping simple for now
+                          }
+                        }}
+                        className="custom-range-thumb w-24 h-1 bg-transparent rounded-lg appearance-none cursor-pointer"
+                        title={`Mínimo: ${p.stockMin || 0}`}
+                      />
+                      <input
+                        type="number"
+                        min="1"
+                        max="1000"
+                        value={p.stockMin || 0}
+                        onChange={async (e) => {
+                          const val = Number(e.target.value);
+                          const updated = products.map(prod => prod.id === p.id ? { ...prod, stockMin: val } : prod);
+                          setProducts(updated);
+                          try {
+                            await api.put(`/products/${p.id}`, { stockMin: val });
+                          } catch (err) {
+                            // ignore
+                          }
+                        }}
+                        className="w-12 text-xs border border-slate-200 rounded px-1 py-0.5 text-center focus:border-primary focus:outline-none"
+                        title="Definir estoque mínimo"
+                      />
+                    </div>
                   </div>
                   <button
                     className="rounded-lg bg-green-100 p-2 text-black hover:bg-green-200"
@@ -901,226 +1042,267 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {showCategoryGrid && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="relative w-[90vw] max-w-[1800px] h-[90vh] max-h-[1060px] rounded-2xl bg-white p-6 shadow-2xl overflow-visible">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-charcoal">Grid de Categorias</h3>
-              <button onClick={() => setShowCategoryGrid(false)} className="text-slate-500 hover:text-slate-700">
-                ✕
-              </button>
+      {
+        showCategoryGrid && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+            <div className="relative w-[90vw] max-w-[1800px] h-[90vh] max-h-[1060px] rounded-2xl bg-white p-6 shadow-2xl overflow-visible">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-charcoal">Grid de Categorias</h3>
+                <button onClick={() => setShowCategoryGrid(false)} className="text-slate-500 hover:text-slate-700">
+                  ✕
+                </button>
+              </div>
+              <div className="h-full overflow-auto">
+                <div className="flex flex-wrap" style={{ gap: '2px', position: 'relative', overflow: 'visible' }}>
+                  {categories.map((cat) => (
+                    <div
+                      key={cat.key}
+                      className="group relative flex h-14 w-14 items-center justify-center rounded-xl p-1 shadow-sm transition hover:scale-105 focus-within:scale-105 focus:outline-none"
+                      style={{ backgroundColor: cat.color || '#e2e8f0', overflow: 'visible' }}
+                      tabIndex={0}
+                      aria-label={cat.label}
+                      onMouseEnter={(e) => showTooltip(cat, e.currentTarget)}
+                      onMouseLeave={() => setTooltipInfo(null)}
+                      onFocus={(e) => showTooltip(cat, e.currentTarget)}
+                      onBlur={() => setTooltipInfo(null)}
+                    >
+                      <div className="text-white" aria-hidden="true">
+                        {getCategoryIcon(cat, 18, 'white')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="h-full overflow-auto">
-              <div className="flex flex-wrap" style={{ gap: '2px', position: 'relative', overflow: 'visible' }}>
-                {categories.map((cat) => (
-                  <div
-                    key={cat.key}
-                    className="group relative flex h-14 w-14 items-center justify-center rounded-xl p-1 shadow-sm transition hover:scale-105 focus-within:scale-105 focus:outline-none"
-                    style={{ backgroundColor: cat.color || '#e2e8f0', overflow: 'visible' }}
-                    tabIndex={0}
-                    aria-label={cat.label}
-                    onMouseEnter={(e) => showTooltip(cat, e.currentTarget)}
-                    onMouseLeave={() => setTooltipInfo(null)}
-                    onFocus={(e) => showTooltip(cat, e.currentTarget)}
-                    onBlur={() => setTooltipInfo(null)}
-                  >
-                    <div className="text-white" aria-hidden="true">
-                      {getCategoryIcon(cat, 18, 'white')}
+          </div>
+        )
+      }
+
+      {
+        editing && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-charcoal">Editar produto</h3>
+                <button onClick={() => setEditing(null)} className="text-slate-500 hover:text-slate-700">
+                  ✕
+                </button>
+              </div>
+              <form className="mt-4 space-y-3" onSubmit={submitEdit}>
+                <input
+                  placeholder="GTIN (Opcional)"
+                  value={editForm.gtin}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, gtin: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                />
+                <input
+                  placeholder="NOME"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  required
+                />
+                <input
+                  placeholder="MARCA"
+                  value={editForm.brand}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, brand: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  required
+                />
+                <div className="flex gap-2">
+                  <div className="w-1/2">
+                    <label className="text-xs uppercase tracking-wide text-slate-500">Valor do produto</label>
+                    <div className="relative mt-1">
+                      <input
+                        type="text"
+                        placeholder="0,00"
+                        value={formatCurrency(editForm.price)}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, price: parseCurrency(e.target.value) }))}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                      />
+                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="w-1/2">
+                    <label className="text-xs uppercase tracking-wide text-slate-500">Taxa individual</label>
+                    <div className="relative mt-1">
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="0,00"
+                        value={editForm.cost}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, cost: Number(e.target.value) }))}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                      />
+                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="w-1/2">
+                    <label className="text-xs uppercase tracking-wide text-slate-500">Peso / Unidade</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="0,00"
+                        value={editForm.weight}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, weight: Number(e.target.value) }))}
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                      />
+                      <select
+                        value={editForm.measureUnit}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, measureUnit: e.target.value }))}
+                        className="mt-1 w-24 rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm focus:border-primary focus:outline-none"
+                      >
+                        <option value="kg">kg</option>
+                        <option value="g">g</option>
+                        <option value="mg">mg</option>
+                        <option value="l">l</option>
+                        <option value="ml">ml</option>
+                        <option value="un">un</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="w-1/2">
+                    <label className="text-xs uppercase tracking-wide text-slate-500">Estoque Atual</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={editForm.stock}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, stock: Number(e.target.value) }))}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="w-1/2">
+                    <label className="text-xs uppercase tracking-wide text-slate-500">Estoque Mínimo</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={editForm.stockMin}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, stockMin: Number(e.target.value) }))}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                  <div className="w-1/2">
+                    <label className="text-xs uppercase tracking-wide text-slate-500">Estoque Máximo</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={editForm.stockMax}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, stockMax: Number(e.target.value) }))}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
+                {renderCategoryDropdown(
+                  editForm.categoryKey,
+                  (val) => setEditForm((prev) => ({ ...prev, categoryKey: val })),
+                  editCatOpen,
+                  setEditCatOpen,
+                  true,
+                  editCatFilter,
+                  setEditCatFilter
+                )}
+                <div className="mt-4 flex items-center justify-end gap-2">
+                  <button type="button" onClick={() => setEditing(null)} className="btn-ghost">
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    Salvar alterações
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
-      )}
-
-      {editing && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-charcoal">Editar produto</h3>
-              <button onClick={() => setEditing(null)} className="text-slate-500 hover:text-slate-700">
-                ✕
-              </button>
-            </div>
-            <form className="mt-4 space-y-3" onSubmit={submitEdit}>
-              <input
-                placeholder="GTIN"
-                value={editForm.gtin}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, gtin: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                required
-              />
-              <input
-                placeholder="NOME"
-                value={editForm.name}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                required
-              />
-              <input
-                placeholder="MARCA"
-                value={editForm.brand}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, brand: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                required
-              />
-              <div className="flex gap-2">
-                <div className="w-1/2">
-                  <label className="text-xs uppercase tracking-wide text-slate-500">Valor do produto</label>
-                  <div className="relative mt-1">
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="0,00"
-                      value={editForm.price}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
-                    />
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
-                  </div>
+        )
+      }
+      {
+        showResetModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+            <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-charcoal">Reset/Limpar Lista de Estoque de Produtos</h3>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Esta ação remove todo o estoque listado. Ela não pode ser desfeita e causará a limpeza completa da lista de produtos.
+                  </p>
                 </div>
-                <div className="w-1/2">
-                  <label className="text-xs uppercase tracking-wide text-slate-500">Taxa individual</label>
-                  <div className="relative mt-1">
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="0,00"
-                      value={editForm.cost}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, cost: Number(e.target.value) }))}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
-                    />
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={closeResetModal}
+                  className="text-slate-400 transition hover:text-slate-600"
+                  aria-label="Fechar aviso de reset"
+                >
+                  ✕
+                </button>
               </div>
-              <div className="flex gap-2">
-                <div className="w-1/2">
-                  <label className="text-xs uppercase tracking-wide text-slate-500">Peso (kg)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    value={editForm.weight}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, weight: Number(e.target.value) }))}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                  />
-                </div>
-                <div className="w-1/2">
-                  <label className="text-xs uppercase tracking-wide text-slate-500">Estoque</label>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    value={editForm.stock}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, stock: Number(e.target.value) }))}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                  />
-                </div>
-              </div>
-              {renderCategoryDropdown(
-                editForm.categoryKey,
-                (val) => setEditForm((prev) => ({ ...prev, categoryKey: val })),
-                editCatOpen,
-                setEditCatOpen,
-                true,
-                editCatFilter,
-                setEditCatFilter
+              <label className="mt-4 block text-xs uppercase tracking-wide text-slate-500">
+                Digite <span className="font-semibold text-red-700">*Quero deletar estoque de Espetinho*</span> para deletar/limpar o estoque inteiro
+              </label>
+              <input
+                value={resetConfirmation}
+                onChange={(e) => setResetConfirmation(e.target.value)}
+                placeholder="Quero deletar estoque de Espetinho"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-red-500 focus:outline-none placeholder:text-[#c25f62]/[0.76]"
+                disabled={resetting}
+              />
+              {resetError && !showFinalConfirm && (
+                <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{resetError}</p>
               )}
-              <div className="mt-4 flex items-center justify-end gap-2">
-                <button type="button" onClick={() => setEditing(null)} className="btn-ghost">
+              <div className="mt-6 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={closeResetModal}
+                  className="rounded-lg border border-transparent px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800"
+                  disabled={resetting}
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="btn-primary">
-                  Salvar alterações
+                <button
+                  type="button"
+                  onClick={handleResetRequest}
+                  className="rounded-lg border border-transparent bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-60"
+                  disabled={resetting}
+                >
+                  Confirmar
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {showResetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-charcoal">Reset/Limpar Lista de Estoque de Produtos</h3>
-                <p className="mt-2 text-sm text-slate-600">
-                  Esta ação remove todo o estoque listado. Ela não pode ser desfeita e causará a limpeza completa da lista de produtos.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeResetModal}
-                className="text-slate-400 transition hover:text-slate-600"
-                aria-label="Fechar aviso de reset"
-              >
-                ✕
-              </button>
-            </div>
-            <label className="mt-4 block text-xs uppercase tracking-wide text-slate-500">
-              Digite <span className="font-semibold text-red-700">*Quero deletar estoque de Espetinho*</span> para deletar/limpar o estoque inteiro
-            </label>
-            <input
-              value={resetConfirmation}
-              onChange={(e) => setResetConfirmation(e.target.value)}
-              placeholder="Quero deletar estoque de Espetinho"
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-red-500 focus:outline-none placeholder:text-[#c25f62]/[0.76]"
-              disabled={resetting}
-            />
-            {resetError && !showFinalConfirm && (
-              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{resetError}</p>
-            )}
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeResetModal}
-                className="rounded-lg border border-transparent px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800"
-                disabled={resetting}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleResetRequest}
-                className="rounded-lg border border-transparent bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-60"
-                disabled={resetting}
-              >
-                Confirmar
-              </button>
-            </div>
-            {showFinalConfirm && (
-              <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/20 px-4">
-                <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl">
-                  <h4 className="text-base font-semibold text-charcoal">Tem certeza disso?</h4>
-                  <p className="mt-2 text-sm text-slate-600">Esta ação apagará o estoque exibido na lista.</p>
-                  <div className="mt-6 flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowFinalConfirm(false)}
-                      className="rounded-lg border border-transparent bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
-                      disabled={resetting}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={performReset}
-                      className="rounded-lg border border-transparent bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:opacity-60"
-                      disabled={resetting}
-                    >
-                      Ok
-                    </button>
+              {showFinalConfirm && (
+                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/20 px-4">
+                  <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl">
+                    <h4 className="text-base font-semibold text-charcoal">Tem certeza disso?</h4>
+                    <p className="mt-2 text-sm text-slate-600">Esta ação apagará o estoque exibido na lista.</p>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowFinalConfirm(false)}
+                        className="rounded-lg border border-transparent bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
+                        disabled={resetting}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={performReset}
+                        className="rounded-lg border border-transparent bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:opacity-60"
+                        disabled={resetting}
+                      >
+                        Ok
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
-      {tooltipInfo && typeof document !== 'undefined'
-        ? createPortal(
+        )
+      }
+      {
+        tooltipInfo && typeof document !== 'undefined'
+          ? createPortal(
             <div
               style={
                 {
@@ -1148,8 +1330,9 @@ const ProductsPage = () => {
             </div>,
             document.body
           )
-        : null}
-    </div>
+          : null
+      }
+    </div >
   );
 };
 
