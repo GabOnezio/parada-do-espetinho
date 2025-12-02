@@ -656,20 +656,20 @@ const ProductsPage = () => {
           border-radius: 9999px;
         }
       `}</style>
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4">
         <div>
           <p className="text-sm text-slate-500">Catálogo</p>
           <h1 className="text-xl font-bold text-charcoal">Produtos</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:justify-center">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && load(search)}
             placeholder="Nome, GTIN, marca..."
-            className="w-64 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            className="w-full sm:w-64 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
           />
-          <button className="btn-secondary" onClick={() => load(search)}>
+          <button className="btn-secondary w-full sm:w-auto" onClick={() => load(search)}>
             Buscar
           </button>
         </div>
