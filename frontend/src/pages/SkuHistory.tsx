@@ -86,10 +86,8 @@ const SkuHistoryPage = () => {
   const handleGenerateBatch = async () => {
     setGenerating(true);
     try {
-      const productsRes = await api.get('/products');
-      const products = productsRes.data?.products || [];
-      const res = await api.post('/skus/batch/generate', { products });
-      setMessage(`✓ ${res.data.generated} SKUs gerados!`);
+      const res = await api.post('/skus/batch/from-db');
+      setMessage(`✓ ${res.data.generated} SKUs gerados de ${res.data.total} produtos!`);
       await load();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {

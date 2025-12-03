@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
+import { prisma } from '../utils/prisma.js';
 import { requireAdmin, requireAuth } from '../middlewares/auth.js';
 
 const router = Router();
@@ -136,6 +137,48 @@ router.put('/', requireAuth, requireAdmin, async (req, res) => {
   await ensureDataFile();
   await fs.writeFile(HISTORY_FILE, content, 'utf-8');
   return res.json({ message: 'Arquivo atualizado' });
+});
+
+router.post('/batch/from-db', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const products = await prisma.product.findMany({ where: { isActive: true } });
+
+    const slugify = (text: string) =>
+      text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    const generateSkuFrom = (p: any) => {
+      const w = p.weight ? String(p.weight).replace(/\D/g, '') : '0';
+      return `${slugify(p.name)}-${slugify(p.brand)}-${w}${p.measureUnit || 'un'}`;
+    };
+
+    await ensureDataFile();
+    const raw = await fs.readFile(HISTORY_FILE, 'utf-8');
+    const lines = raw.split('\n').filter((l) => l.trim());
+    const existingSkus = new Set(lines.slice(1).map((l) => l.split(';')[0]));
+
+    const newLines: string[] = [];
+    for (const p of products) {
+      const sku = generateSkuFrom(p);
+      if (!existingSkus.has(sku)) {
+        newLines.push(`${sku};${p.gtin || ''};${p.name};${p.brand};${p.price ?? ''};${p.cost ?? ''};${p.measureUnit || ''}\n`);
+        existingSkus.add(sku);
+      }
+    }
+
+    if (newLines.length > 0) {
+      await fs.appendFile(HISTORY_FILE, newLines.join(''), 'utf-8');
+    }
+
+    return res.json({ total: products.length, generated: newLines.length, message: `${products.length} produtos processados, ${newLines.length} SKUs gerados` });
+  } catch (error) {
+    console.error('[SKU] Error generating from DB:', error);
+    return res.status(500).json({ message: 'Erro ao gerar SKUs do banco' });
+  }
 });
 
 export default router;
