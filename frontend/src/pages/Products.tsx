@@ -168,6 +168,7 @@ const ProductsPage = () => {
   const LAST_ADDED_KEY = 'lastAddedProductId';
   const [sortMode, setSortMode] = useState<'recent' | 'alpha'>('recent');
   const sortModeRef = useRef<'recent' | 'alpha'>('recent');
+  const [syncStatus, setSyncStatus] = useState<string>('');
 
   const hiddenSeedSet = useMemo(() => new Set(hiddenSeedGtins), [hiddenSeedGtins]);
   const seedCategoryMap = useMemo(() => buildSeedCategoryMap(hiddenSeedSet), [hiddenSeedSet]);
@@ -365,6 +366,13 @@ const ProductsPage = () => {
     saveOrderMap(orderMap);
     setProducts(merged);
     productsRef.current = merged;
+    try {
+      saveProducts(merged as any).catch(() => {
+        /* ignore */
+      });
+    } catch {
+      /* ignore */
+    }
     persistProductCaches(merged);
     setCategoryMap((prev) => {
       const sanitizedPrev = { ...prev };
@@ -553,6 +561,60 @@ const ProductsPage = () => {
     sortModeRef.current = mode;
     setSortMode(mode);
     applyProducts(productsRef.current);
+  };
+
+  const syncProductsToServer = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setSyncStatus('Sem internet. Conecte-se para sincronizar com o banco de dados.');
+      return;
+    }
+    setSyncStatus('Enviando produtos...');
+    const list = productsRef.current;
+    let created = 0;
+    let updated = 0;
+    let failed = 0;
+    const updatedList = [...list];
+
+    for (const p of list) {
+      if (p.isSeed) continue;
+      const payload = {
+        name: p.name,
+        brand: p.brand,
+        gtin: p.gtin,
+        price: p.price,
+        cost: p.cost,
+        weight: p.weight,
+        stock: p.stock,
+        stockMin: p.stockMin,
+        stockMax: p.stockMax,
+        measureUnit: p.measureUnit,
+        sku: p.sku,
+        categoryKey: p.categoryKey
+      };
+      try {
+        if (p.id?.startsWith('temp-')) {
+          const res = await api.post('/products', payload);
+          created += 1;
+          if (res?.data?.id) {
+            const idx = updatedList.findIndex((it) => it.id === p.id);
+            if (idx >= 0) {
+              updatedList[idx] = { ...res.data, ...payload, id: res.data.id, isSeed: false };
+            }
+          }
+        } else {
+          await api.put(`/products/${p.id}`, payload);
+          updated += 1;
+        }
+      } catch {
+        failed += 1;
+      }
+    }
+    applyProducts(updatedList);
+    setSyncStatus(
+      failed > 0
+        ? `Sincronizado (novos: ${created}, atualizados: ${updated}). Falhas: ${failed}.`
+        : `Sincronizado com sucesso (novos: ${created}, atualizados: ${updated}).`
+    );
   };
 
   const load = async (query?: string, customHidden?: Set<string>) => {
@@ -927,33 +989,28 @@ const ProductsPage = () => {
   const submitEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing) return;
+    const { categoryKey, ...payload } = editForm;
+    // Atualização otimista local
+    const locallyUpdated = products.map((p) =>
+      p.id === editing.id ? { ...p, ...payload, categoryKey, isSeed: !!p.isSeed } : p
+    );
+    applyProducts(locallyUpdated);
+    const newMap = { ...categoryMap, [editing.id]: categoryKey, [editing.gtin]: categoryKey };
+    setCategoryMap(newMap);
+    localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(newMap));
+
     try {
-      const { categoryKey, ...payload } = editForm;
       if (editing.isSeed) {
-        const updatedList = products.map((p) =>
-          p.id === editing.id ? { ...p, ...payload, categoryKey, isSeed: true } : p
-        );
-        applyProducts(updatedList);
-        const newMap = { ...categoryMap, [editing.id]: categoryKey, [editing.gtin]: categoryKey };
-        setCategoryMap(newMap);
-        localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(newMap));
+        // apenas local/semente
         notifySW();
-        setEditing(null);
-        return;
+      } else {
+        await api.put(`/products/${editing.id}`, payload);
+        notifySW();
       }
-      await api.put(`/products/${editing.id}`, payload);
-      const updated = await api.get('/products', { params: { q: search } });
-      applyProducts(updated.data);
-      // salva categoria editada
-      setCategoryMap((prev) => {
-        const next = { ...prev, [editing.id]: categoryKey, [editing.gtin]: categoryKey };
-        localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(next));
-        return next;
-      });
-      notifySW();
+    } catch {
+      // offline ou falha: mantemos atualização local
+    } finally {
       setEditing(null);
-    } catch (err) {
-      // ignore
     }
   };
 
@@ -1428,6 +1485,14 @@ const ProductsPage = () => {
                 >
                   <LucideIcons.ArrowUpWideNarrow size={16} />
                 </button>
+                <button
+                  type="button"
+                  onClick={syncProductsToServer}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 hover:border-primary/50 hover:text-primary"
+                  title="Enviar produtos locais para o banco de dados online (requer internet)"
+                >
+                  Atualizar banco de dados
+                </button>
               </div>
             </div>
             <h2 className="text-lg font-semibold text-charcoal">Lista</h2>
@@ -1441,6 +1506,7 @@ const ProductsPage = () => {
               <ListRestart className="h-5 w-5" />
             </button>
           </div>
+          {syncStatus && <p className="mt-1 text-xs text-slate-600">{syncStatus}</p>}
           <div className="mt-3 space-y-2 max-h-[1000px] overflow-y-auto pr-1">
             {loading && <p className="text-sm text-slate-500">Carregando...</p>}
             {products.map((p) => (
