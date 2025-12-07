@@ -1265,6 +1265,7 @@ const ProductsPage = () => {
                     name: val,
                     ...(suggested ? { categoryKey: suggested } : {})
                   }));
+                  setCatFilter(val);
                   if (suggested) {
                     const catLabel = categories.find((c) => c.key === suggested)?.label;
                     if (catLabel) setCatFilter(catLabel);
@@ -1596,12 +1597,25 @@ const ProductsPage = () => {
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
                 />
                 <input
-                  placeholder="NOME"
-                  value={editForm.name}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
-                  required
-                />
+                placeholder="NOME"
+                value={editForm.name}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const suggested = suggestCategoryFromName(val);
+                  setEditForm((prev) => ({
+                    ...prev,
+                    name: val,
+                    ...(suggested ? { categoryKey: suggested } : {})
+                  }));
+                  setEditCatFilter(val);
+                  if (suggested) {
+                    const catLabel = categories.find((c) => c.key === suggested)?.label;
+                    if (catLabel) setEditCatFilter(catLabel);
+                  }
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
+                required
+              />
                 <input
                   placeholder="MARCA"
                   value={editForm.brand}
@@ -1702,7 +1716,7 @@ const ProductsPage = () => {
                   (val) => setEditForm((prev) => ({ ...prev, categoryKey: val })),
                   editCatOpen,
                   setEditCatOpen,
-                  true,
+                  false,
                   editCatFilter,
                   setEditCatFilter
                 )}
