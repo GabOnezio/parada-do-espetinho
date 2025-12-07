@@ -75,7 +75,9 @@ const baseCategories: Category[] = [
   { key: 'carnes', label: 'Carnes', description: 'Aves e cortes diversos', icon: <FaDrumstickBite size={16} />, color: '#ef4444' },
   { key: 'laticinios', label: 'Laticínios', description: 'Leite, queijos e derivados', icon: <FaCheese size={16} />, color: '#93c5fd' },
   { key: 'temperos', label: 'Temperos e Condimentos', description: 'Sal, vinagre, molhos, maioneses', icon: <FaPepperHot size={16} />, color: '#a855f7' },
-  { key: 'esportes', label: 'Esportes', description: 'Bolas e itens esportivos', icon: <FaBasketballBall size={16} />, color: '#fb923c' }
+  { key: 'esportes', label: 'Esportes', description: 'Bolas e itens esportivos', icon: <FaBasketballBall size={16} />, color: '#fb923c' },
+  { key: 'brinquedos_criancas', label: 'Brinquedos de Crianças', description: 'Brinquedos infantis', icon: <LucideIcons.Gamepad2 size={16} />, color: '#8b5cf6' },
+  { key: 'brinquedos_adultos', label: 'Brinquedos Adultos', description: 'Colecionáveis e jogos adultos', icon: <LucideIcons.Puzzle size={16} />, color: '#c084fc' }
 ];
 
 const REQUIRED_RESET_PHRASE = 'Quero deletar estoque de Espetinho';
@@ -719,7 +721,9 @@ const ProductsPage = () => {
     { key: 'esportes', pattern: /(bola|esporte)/i },
     { key: 'tabacos', pattern: /(tabaco|cigarro|cigarrete|fumo|charuto|palheiro)/i },
     { key: 'alimentos', pattern: /(arroz|feijao|milho|macarrao|parafuso|ervilha)/i },
-    { key: 'chas', pattern: /(cha|mate|camomila)/i }
+    { key: 'chas', pattern: /(cha|mate|camomila)/i },
+    { key: 'brinquedos_criancas', pattern: /(brinquedo|infantil|boneco|boneca|jogo infantil)/i },
+    { key: 'brinquedos_adultos', pattern: /(board game|tabuleiro|colecionavel|colecionável|adulto)/i }
   ];
 
   const suggestCategoryFromName = (name: string): CategoryKey | null => {
