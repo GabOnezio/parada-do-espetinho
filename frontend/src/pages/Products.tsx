@@ -46,6 +46,7 @@ type Product = {
   stockMin?: number;
   stockMax?: number;
   measureUnit?: string;
+  createdAt?: string;
 };
 
 type Category = {
@@ -65,9 +66,11 @@ const baseCategories: Category[] = [
   { key: 'carnes_peixes', label: 'Carnes e Peixes', description: 'Peixes, sardinhas e cortes cárneos', icon: <FaFish size={16} />, color: '#f97316' },
   { key: 'hortifruti', label: 'Hortifruti', description: 'Frutas, verduras e legumes', icon: <FaAppleAlt size={16} />, color: '#22c55e' },
   { key: 'limpeza', label: 'Limpeza', description: 'Sabão, detergente, desinfetante', icon: <FaPumpSoap size={16} />, color: '#1e3a8a' },
-  { key: 'padaria', label: 'Padaria', description: 'Pães, bolachas e panificados', icon: <GiCroissant size={16} />, color: '#facc15' },
+  { key: 'padaria', label: 'Padaria', description: 'Pães e panificados', icon: <GiCroissant size={16} />, color: '#facc15' },
+  { key: 'bolachas', label: 'Bolachas / Cookies', description: 'Biscoitos, cookies e recheados', icon: <LucideIcons.Cookie size={16} />, color: '#8b5a2b' },
   { key: 'higiene_pessoal', label: 'Higiene Pessoal', description: 'Sabonetes e cuidados pessoais', icon: <FaSoap size={16} />, color: '#6366f1' },
   { key: 'utilidades_domesticas', label: 'Utilidades Domésticas', description: 'Filtros, ferramentas, carvão', icon: <FaWrench size={16} />, color: '#334155' },
+  { key: 'tabacos', label: 'Tabacos', description: 'Tabaco, fumos e acessórios', icon: <LucideIcons.Cigarette size={16} />, color: '#8b5cf6' },
   { key: 'chas', label: 'Chás', description: 'Erva-mate e chás quentes', icon: <FaMugHot size={16} />, color: '#0ea5e9' },
   { key: 'carnes', label: 'Carnes', description: 'Aves e cortes diversos', icon: <FaDrumstickBite size={16} />, color: '#ef4444' },
   { key: 'laticinios', label: 'Laticínios', description: 'Leite, queijos e derivados', icon: <FaCheese size={16} />, color: '#93c5fd' },
@@ -158,6 +161,13 @@ const ProductsPage = () => {
   const productsRef = useRef<Product[]>([]);
   const hasSyncedAllSkusRef = useRef(false);
   const autoSeedRestoreRef = useRef(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const orderRef = useRef<Record<string, number>>({});
+  const ORDER_KEY = 'productOrderMap';
+  const lastAddedRef = useRef<string | null>(null);
+  const LAST_ADDED_KEY = 'lastAddedProductId';
+  const [sortMode, setSortMode] = useState<'recent' | 'alpha'>('recent');
+  const sortModeRef = useRef<'recent' | 'alpha'>('recent');
 
   const hiddenSeedSet = useMemo(() => new Set(hiddenSeedGtins), [hiddenSeedGtins]);
   const seedCategoryMap = useMemo(() => buildSeedCategoryMap(hiddenSeedSet), [hiddenSeedSet]);
@@ -258,6 +268,15 @@ const ProductsPage = () => {
     }
   };
 
+  const saveOrderMap = (map: Record<string, number>) => {
+    orderRef.current = map;
+    try {
+      localStorage.setItem(ORDER_KEY, JSON.stringify(map));
+    } catch {
+      /* ignore */
+    }
+  };
+
   const persistProductCaches = (list: Product[]) => {
     if (typeof window === 'undefined') return;
     try {
@@ -308,9 +327,42 @@ const ProductsPage = () => {
     notifySW();
   };
 
-  const applyProducts = (data: Product[], customHidden?: Set<string>) => {
+  const applyProducts = (data: Product[], customHidden?: Set<string>, pinId?: string | null) => {
     const hiddenSetToUse = customHidden || hiddenSeedSet;
-    const merged = mergeWithSeedProducts<Product>(data, hiddenSetToUse) as Product[];
+    let merged = mergeWithSeedProducts<Product>(data, hiddenSetToUse) as Product[];
+    const effectivePin = pinId ?? lastAddedRef.current;
+    if (effectivePin) {
+      const pinned = merged.find((p) => p.id === effectivePin);
+      if (pinned) {
+        merged = [pinned, ...merged.filter((p) => p.id !== effectivePin)];
+      }
+    }
+    const orderMap = { ...orderRef.current };
+    let seedCounter = 0;
+    merged.forEach((p, idx) => {
+      if (orderMap[p.id] == null) {
+        if (p.createdAt) {
+          orderMap[p.id] = new Date(p.createdAt).getTime();
+        } else if (p.isSeed) {
+          orderMap[p.id] = -1000 - seedCounter;
+          seedCounter += 1;
+        } else {
+          orderMap[p.id] = Date.now() - idx;
+        }
+      }
+    });
+    if (effectivePin) {
+      orderMap[effectivePin] = orderMap[effectivePin] ?? Date.now();
+      orderMap[effectivePin] = Math.max(...Object.values(orderMap), orderMap[effectivePin]) + 1;
+    }
+    if (sortModeRef.current === 'alpha') {
+      const pinned = effectivePin ? merged.find((p) => p.id === effectivePin) : null;
+      const list = merged.filter((p) => !pinned || p.id !== pinned.id).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+      merged = pinned ? [pinned, ...list] : list;
+    } else {
+      merged = merged.sort((a, b) => (orderMap[b.id] || 0) - (orderMap[a.id] || 0));
+    }
+    saveOrderMap(orderMap);
     setProducts(merged);
     productsRef.current = merged;
     persistProductCaches(merged);
@@ -497,17 +549,23 @@ const ProductsPage = () => {
     }
   };
 
+  const applySortMode = (mode: 'recent' | 'alpha') => {
+    sortModeRef.current = mode;
+    setSortMode(mode);
+    applyProducts(productsRef.current);
+  };
+
   const load = async (query?: string, customHidden?: Set<string>) => {
     setLoading(true);
     try {
       const res = await api.get('/products', { params: { q: query } });
-      applyProducts(res.data, customHidden);
+      applyProducts(res.data, customHidden, lastAddedRef.current);
     } catch (err) {
       const cached = localStorage.getItem('productsCache');
       if (cached) {
-        applyProducts(JSON.parse(cached), customHidden);
+        applyProducts(JSON.parse(cached), customHidden, lastAddedRef.current);
       } else {
-        applyProducts([], customHidden);
+        applyProducts([], customHidden, lastAddedRef.current);
       }
     } finally {
       setLoading(false);
@@ -515,6 +573,22 @@ const ProductsPage = () => {
   };
 
   useEffect(() => {
+    const storedOrder = (() => {
+      if (typeof localStorage === 'undefined') return {};
+      try {
+        return JSON.parse(localStorage.getItem(ORDER_KEY) || '{}') as Record<string, number>;
+      } catch {
+        return {};
+      }
+    })();
+    orderRef.current = storedOrder;
+    if (typeof localStorage !== 'undefined') {
+      const storedLast = localStorage.getItem(LAST_ADDED_KEY);
+      if (storedLast) {
+        lastAddedRef.current = storedLast;
+      }
+    }
+
     const storedHidden = []; // força exibir todos os seeds para repor estoque completo
     persistHiddenSeedGtins(storedHidden);
     setHiddenSeedGtins(storedHidden);
@@ -570,7 +644,8 @@ const ProductsPage = () => {
       .toLowerCase();
 
   const keywordCategories: Array<{ key: CategoryKey; pattern: RegExp }> = [
-    { key: 'padaria', pattern: /(bolacha|biscoit|pao|pão|massa|farinha|mistura|pudim)/i },
+    { key: 'bolachas', pattern: /(bolacha|biscoit|cookie|rechead)/i },
+    { key: 'padaria', pattern: /(pao|pão|massa|farinha|mistura|pudim)/i },
     { key: 'doces_sobremesas', pattern: /(chocolate|doce|bala|gelatina|achocolat|wafer|barrinha)/i },
     { key: 'bebidas_alcoolicas', pattern: /(cerveja|vinho|whisky|vodka|cachaça|cachaca)/i },
     { key: 'bebidas_nao_alcoolicas', pattern: /(refrigerante|suco|agua|mineral|energ|achocolatado|refri)/i },
@@ -580,6 +655,7 @@ const ProductsPage = () => {
     { key: 'limpeza', pattern: /(sabao|sabão|detergente|limp|desinfetante|omo)/i },
     { key: 'hortifruti', pattern: /(fruta|legume|verdura|maçã|maca|banana|tomate)/i },
     { key: 'esportes', pattern: /(bola|esporte)/i },
+    { key: 'tabacos', pattern: /(tabaco|cigarro|cigarrete|fumo|charuto|palheiro)/i },
     { key: 'alimentos', pattern: /(arroz|feijao|milho|macarrao|parafuso|ervilha)/i },
     { key: 'chas', pattern: /(cha|mate|camomila)/i }
   ];
@@ -629,7 +705,16 @@ const ProductsPage = () => {
 
     const currentList = productsRef.current;
     const optimisticList = [tempProduct, ...currentList.filter((p) => p.id !== tempProduct.id)];
-    applyProducts(optimisticList);
+    const map = { ...orderRef.current, [tempProduct.id]: Date.now() };
+    saveOrderMap(map);
+    lastAddedRef.current = tempProduct.id;
+    try {
+      localStorage.setItem(LAST_ADDED_KEY, tempProduct.id);
+    } catch {
+      /* ignore */
+    }
+    setHighlightId(tempProduct.id);
+    applyProducts(optimisticList, undefined, tempProduct.id);
     setCategoryMap((prev) => {
       const next: Record<string, CategoryKey> = {
         ...prev,
@@ -663,7 +748,19 @@ const ProductsPage = () => {
       const replaced = latest.map((p) => (p.id === tempProduct.id ? created : p));
       const hasTemp = latest.some((p) => p.id === tempProduct.id);
       const updated = hasTemp ? replaced : [created, ...latest.filter((p) => p.id !== created.id)];
-      applyProducts(updated);
+      const map = { ...orderRef.current };
+      const ts = map[tempProduct.id] || Date.now();
+      delete map[tempProduct.id];
+      map[created.id] = ts;
+      saveOrderMap(map);
+      lastAddedRef.current = created.id;
+      try {
+        localStorage.setItem(LAST_ADDED_KEY, created.id);
+      } catch {
+        /* ignore */
+      }
+      setHighlightId(created.id);
+      applyProducts(updated, undefined, created.id);
       setCategoryMap((prev) => {
         const next = {
           ...prev,
@@ -679,6 +776,55 @@ const ProductsPage = () => {
     } catch (err) {
       // keep optimistic item; no-op
     }
+  };
+
+  const relevanceScore = (p: Product, term: string) => {
+    const normalizedTerm = normalizeText(term);
+    const nName = normalizeText(p.name || '');
+    const nBrand = normalizeText(p.brand || '');
+    let score = 0;
+    const nameWords = nName.split(' ');
+    if (nameWords.some((w) => w === normalizedTerm)) score = 120;
+    if (nName.startsWith(normalizedTerm)) score = Math.max(score, 110);
+    if (nName.includes(normalizedTerm)) score = Math.max(score, 100);
+    if (nBrand.includes(normalizedTerm)) score = Math.max(score, 60);
+    if ((p.gtin || '').toLowerCase().includes(term.toLowerCase())) score = Math.max(score, 40);
+    return score;
+  };
+
+  const focusBySearch = () => {
+    const term = search.trim();
+    if (!term) {
+      setHighlightId(null);
+      applyProducts(productsRef.current);
+      return;
+    }
+    const list = productsRef.current;
+    const matches = list
+      .map((p) => ({ product: p, score: relevanceScore(p, term) }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        const orderA = orderRef.current[a.product.id] || 0;
+        const orderB = orderRef.current[b.product.id] || 0;
+        return orderB - orderA;
+      })
+      .map((item) => item.product);
+    const nonMatches = list
+      .filter((p) => !matches.find((m) => m.id === p.id))
+      .sort((a, b) => {
+        const orderA = orderRef.current[a.id] || 0;
+        const orderB = orderRef.current[b.id] || 0;
+        return orderB - orderA;
+      });
+    const finalList = [...matches, ...nonMatches];
+    if (matches.length) {
+      setHighlightId(matches[0].id);
+    } else {
+      setHighlightId(null);
+    }
+    setProducts(finalList);
+    productsRef.current = finalList;
   };
 
   const handleDelete = async (id: string) => {
@@ -1243,11 +1389,16 @@ const ProductsPage = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && load(search)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  focusBySearch();
+                }
+              }}
               placeholder="Nome, GTIN, marca..."
               className="w-96 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
             />
-            <button className="btn-secondary" onClick={() => load(search)}>
+            <button className="btn-secondary" onClick={focusBySearch}>
               Buscar
             </button>
           </div>
@@ -1255,7 +1406,29 @@ const ProductsPage = () => {
 
         <div className="glass-card p-4">
           <div className="relative flex items-center justify-center">
-            <span className="absolute left-0 text-xs text-slate-500">{products.length} itens</span>
+            <div className="absolute left-0 flex items-center gap-2">
+              <span className="text-xs text-slate-500">{products.length} itens</span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => applySortMode('alpha')}
+                  className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs ${sortMode === 'alpha' ? 'border border-primary/50 bg-primary/10 text-primary' : 'border border-slate-200 bg-white text-slate-600'
+                    }`}
+                  title="Ordenar alfabeticamente (A→Z)"
+                >
+                  <LucideIcons.ArrowUpAZ size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applySortMode('recent')}
+                  className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs ${sortMode === 'recent' ? 'border border-primary/50 bg-primary/10 text-primary' : 'border border-slate-200 bg-white text-slate-600'
+                    }`}
+                  title="Ordenar por último adicionado no topo"
+                >
+                  <LucideIcons.ArrowUpWideNarrow size={16} />
+                </button>
+              </div>
+            </div>
             <h2 className="text-lg font-semibold text-charcoal">Lista</h2>
             <button
               type="button"
@@ -1272,7 +1445,9 @@ const ProductsPage = () => {
             {products.map((p) => (
               <div
                 key={p.id}
-                className="flex flex-col gap-1 rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm md:flex-row md:items-center md:justify-between"
+                className={`flex flex-col gap-1 rounded-xl bg-white px-4 py-3 shadow-sm md:flex-row md:items-center md:justify-between ${
+                  highlightId === p.id ? 'border-[3px] border-black' : 'border border-slate-100'
+                }`}
               >
                 <div className="flex flex-1 items-start gap-2">
                   {getCategory(p) && (
