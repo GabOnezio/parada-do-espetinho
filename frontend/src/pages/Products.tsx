@@ -477,19 +477,19 @@ const ProductsPage = () => {
     });
 
     try {
-      await api.post('/products', payload);
-      const updated = await api.get('/products', { params: { q: search } });
-      applyProducts(updated.data);
-      const created = (updated.data as Product[]).find(
-        (p: Product) => p.gtin === payload.gtin || p.name === payload.name || p.sku === skuToUse
-      );
-      if (created) {
-        setCategoryMap((prev) => {
-          const next = { ...prev, [created.id]: chosenCategory, [created.gtin]: chosenCategory, ...(created.sku ? { [created.sku]: chosenCategory } : {}) };
-          localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(next));
-          return next;
-        });
-      }
+      const res = await api.post('/products', payload);
+      const created = res.data as Product;
+      applyProducts([...products.filter((p) => p.id !== tempProduct.id), created]);
+      setCategoryMap((prev) => {
+        const next = {
+          ...prev,
+          [created.id]: chosenCategory,
+          [created.gtin]: chosenCategory,
+          ...(created.sku ? { [created.sku]: chosenCategory } : {})
+        };
+        localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(next));
+        return next;
+      });
       notifySW();
     } catch (err) {
       // keep optimistic item; no-op
