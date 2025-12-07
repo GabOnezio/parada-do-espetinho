@@ -999,6 +999,22 @@ const ProductsPage = () => {
     if (!editing) return;
     const { categoryKey, ...payload } = editForm;
     // Atualização otimista local
+    if (editing.isSeed) {
+      const updatedHidden = Array.from(new Set([...hiddenSeedGtins, editing.gtin].filter(Boolean)));
+      setHiddenSeedGtins(updatedHidden);
+      persistHiddenSeedGtins(updatedHidden);
+      const locallyUpdated = products.map((p) =>
+        p.id === editing.id ? { ...p, ...payload, categoryKey, isSeed: false } : p
+      );
+      applyProducts(locallyUpdated, new Set(updatedHidden));
+      const newMap = { ...categoryMap, [editing.id]: categoryKey, [editing.gtin]: categoryKey };
+      setCategoryMap(newMap);
+      localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(newMap));
+      notifySW();
+      setEditing(null);
+      return;
+    }
+
     const locallyUpdated = products.map((p) =>
       p.id === editing.id ? { ...p, ...payload, categoryKey, isSeed: !!p.isSeed } : p
     );
@@ -1008,13 +1024,8 @@ const ProductsPage = () => {
     localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(newMap));
 
     try {
-      if (editing.isSeed) {
-        // apenas local/semente
-        notifySW();
-      } else {
-        await api.put(`/products/${editing.id}`, payload);
-        notifySW();
-      }
+      await api.put(`/products/${editing.id}`, payload);
+      notifySW();
     } catch {
       // offline ou falha: mantemos atualização local
     } finally {
