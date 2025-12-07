@@ -193,11 +193,13 @@ const ProductsPage = () => {
     setOpen: (v: boolean) => void,
     dropUp = false,
     filterValue = '',
-    setFilter?: (v: string) => void
+    setFilter?: (v: string) => void,
+    hideSelectedLabel = false
   ) => {
     const normalizedFilter = filterValue.toLowerCase();
     const selected = value ? categories.find((c) => c.key === value) : null;
     const filtered = categories.filter((c) => `${c.label} ${c.description}`.toLowerCase().includes(normalizedFilter));
+    const displayedValue = hideSelectedLabel ? filterValue : selected ? selected.label : filterValue;
     return (
       <div className="relative">
         <label className="text-xs uppercase tracking-wide text-slate-500">Categoria</label>
@@ -207,7 +209,7 @@ const ProductsPage = () => {
           role="presentation"
         >
           <input
-            value={selected ? selected.label : filterValue}
+            value={displayedValue}
             onFocus={() => {
               setOpen(true);
               if (!selected) {
@@ -802,8 +804,9 @@ const ProductsPage = () => {
       stockMin: 0,
       stockMax: 0,
       measureUnit: 'kg',
-      categoryKey: (categories[0]?.key as CategoryKey) || ''
+      categoryKey: '' as CategoryKey
     });
+    setCatFilter('');
 
     syncSkuHistoryFromProducts([tempProduct]);
 
@@ -949,6 +952,7 @@ const ProductsPage = () => {
       measureUnit: p.measureUnit || 'kg',
       categoryKey: cat
     });
+    setEditCatFilter('');
   };
 
   const handleCreateCategory = (e: React.FormEvent) => {
@@ -1443,7 +1447,8 @@ const ProductsPage = () => {
                 setCatOpen,
                 false,
                 catFilter,
-                setCatFilter
+                setCatFilter,
+                true
               )}
               <button type="submit" className="btn-primary w-full">
                 Salvar
@@ -1794,7 +1799,8 @@ const ProductsPage = () => {
                   setEditCatOpen,
                   false,
                   editCatFilter,
-                  setEditCatFilter
+                  setEditCatFilter,
+                  true
                 )}
                 <div className="mt-4 flex items-center justify-end gap-2">
                   <button type="button" onClick={() => setEditing(null)} className="btn-ghost">
