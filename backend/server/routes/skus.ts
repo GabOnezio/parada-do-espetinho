@@ -88,6 +88,20 @@ function generateCompactSku(p: { name: string; brand: string; weight?: number | 
   return `${brandCode}${flavorCode}${typeCode}${pesoStr}${unidadeCode}`.replace(/[^A-Z0-9-]/gi, '').toUpperCase();
 }
 
+function mapProductsForSku(
+  products: Array<{ name: string; brand: string; weight?: any; measureUnit?: string | null; price?: any; cost?: any; gtin?: any }>
+) {
+  return products.map((p) => ({
+    name: p.name,
+    brand: p.brand,
+    weight: p.weight !== null && p.weight !== undefined ? Number(p.weight) : undefined,
+    measureUnit: p.measureUnit || undefined,
+    price: p.price !== null && p.price !== undefined ? Number(p.price) : undefined,
+    cost: p.cost !== null && p.cost !== undefined ? Number(p.cost) : undefined,
+    gtin: p.gtin !== null && p.gtin !== undefined ? String(p.gtin) : undefined
+  }));
+}
+
 function ensureUniqueSkus(products: Array<{ name: string; brand: string; weight?: number; measureUnit?: string; price?: number; cost?: number; gtin?: string }>) {
   const seen: Record<string, number> = {};
   return products.map((p, idx) => {
@@ -163,7 +177,7 @@ router.post('/batch/generate', requireAuth, requireAdmin, async (req, res) => {
   await ensureDataFile();
 
   const header = 'sku;gtin;name;brand;price;tax;measureUnit';
-  const entries = ensureUniqueSkus(products);
+  const entries = ensureUniqueSkus(mapProductsForSku(products));
   const out = [
     header,
     ...entries.map((p) => `${p.sku};${p.gtin || ''};${p.name};${p.brand};${p.price ?? ''};${p.cost ?? ''};${p.measureUnit || ''}`)
@@ -250,7 +264,7 @@ router.post('/batch/from-db', requireAuth, requireAdmin, async (_req, res) => {
     await ensureDataFile();
 
     const header = 'sku;gtin;name;brand;price;tax;measureUnit';
-    const entries = ensureUniqueSkus(products);
+    const entries = ensureUniqueSkus(mapProductsForSku(products));
     const out = [
       header,
       ...entries.map((p) => `${p.sku};${p.gtin || ''};${p.name};${p.brand};${p.price ?? ''};${p.cost ?? ''};${p.measureUnit || ''}`)

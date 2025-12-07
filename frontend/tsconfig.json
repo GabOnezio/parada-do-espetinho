@@ -5,13 +5,28 @@
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "module": "ESNext",
     "moduleResolution": "Node",
+    "baseUrl": ".",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "allowJs": false,
     "strict": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
+    "paths": {
+      "vite": ["./node_modules/vite", "../node_modules/vite"],
+      "vite/*": ["./node_modules/vite/*", "../node_modules/vite/*"],
+      "vite/client": ["./node_modules/vite/client.d.ts", "../node_modules/vite/client.d.ts"],
+      "react-router-dom": [
+        "./node_modules/react-router-dom/dist/index.d.ts",
+        "../node_modules/react-router-dom/dist/index.d.ts"
+      ],
+      "react-router-dom/*": [
+        "./node_modules/react-router-dom/dist/*",
+        "../node_modules/react-router-dom/dist/*"
+      ]
+    }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

@@ -12,6 +12,7 @@
     "lint": "npm run lint --workspace frontend && npm run lint --workspace backend"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "vite": "^7.2.6"
   }
 }
