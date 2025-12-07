@@ -236,6 +236,7 @@ const SalesPage = () => {
   const [pendingCardSale, setPendingCardSale] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
   const [pendingTx, setPendingTx] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
+  const totalItems = useMemo(() => cart.reduce((acc, item) => acc + (item.quantity || 0), 0), [cart]);
 
   useEffect(() => {
     // Primeiro tenta IDB
@@ -705,7 +706,9 @@ const SalesPage = () => {
           <div className="glass-card p-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-charcoal">Itens (visualização rápida)</h2>
-              <span className="text-xs text-slate-500">{cart.length} itens</span>
+              <span className="text-xs text-slate-500">
+                {totalItems} {totalItems === 1 ? 'item' : 'itens'}
+              </span>
             </div>
             <div className="mt-3 grid max-h-56 grid-cols-1 gap-3 overflow-y-auto">
               {cart.map((item) => {
@@ -781,7 +784,9 @@ const SalesPage = () => {
           <div className="glass-card p-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-charcoal">Carrinho de compra</h2>
-              <span className="text-xs text-slate-500">{cart.length} itens</span>
+              <span className="text-xs text-slate-500">
+                {totalItems} {totalItems === 1 ? 'item' : 'itens'}
+              </span>
             </div>
             <div className="mt-3 space-y-2 max-h-56 overflow-y-auto">
               {cart.map((item) => {
