@@ -621,17 +621,36 @@ const ProductsPage = () => {
     );
   };
 
+  const mergeRemoteWithLocal = (remote: Product[]) => {
+    const current = productsRef.current || [];
+    const seen = new Set<string>();
+    remote.forEach((p) => {
+      if (p.id) seen.add(p.id);
+      if (p.gtin) seen.add(p.gtin);
+    });
+    const localsToKeep = current.filter((p) => {
+      if (!p.id && !p.gtin) return true;
+      if (p.id && seen.has(p.id)) return false;
+      if (p.gtin && seen.has(p.gtin)) return false;
+      return true;
+    });
+    return [...remote, ...localsToKeep];
+  };
+
   const load = async (query?: string, customHidden?: Set<string>) => {
     setLoading(true);
     try {
       const res = await api.get('/products', { params: { q: query } });
-      applyProducts(res.data, customHidden, lastAddedRef.current);
+      const merged = mergeRemoteWithLocal(res.data || []);
+      applyProducts(merged, customHidden, lastAddedRef.current);
     } catch (err) {
       const cached = localStorage.getItem('productsCache');
       if (cached) {
-        applyProducts(JSON.parse(cached), customHidden, lastAddedRef.current);
+        const parsed = JSON.parse(cached);
+        const merged = mergeRemoteWithLocal(parsed || []);
+        applyProducts(merged, customHidden, lastAddedRef.current);
       } else {
-        applyProducts([], customHidden, lastAddedRef.current);
+        applyProducts(mergeRemoteWithLocal([]), customHidden, lastAddedRef.current);
       }
     } finally {
       setLoading(false);
