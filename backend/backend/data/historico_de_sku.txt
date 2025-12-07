@@ -1,157 +1,141 @@
-# Histórico de SKU
-
-ELM75000G | 7892840822347 | Doritos | Elma Chips | 15 | 0 | kg |
-CAR1000000G | 7896894900013 | Açucar refinado | Caravelas | 5.99 | 0 | kg |   
-FAR1000000G | 7891080007705 | Farinha de Trigo | Farina | 5.99 | 10 | kg |
-SUD1000000G | 7896021800209 | Farinha de Trigo Enriquecida | Sudoeste | 5.99 | 0 | kg |
-FAR5000000G | 7891080007842 | Farinha de Trigo Branquinha | Farina | 19.9 | 0 | kg |
-1000000G | 7897060600027 | Farinha de Milho Amarelo | D. Pedro | 7.99 | 0 | kg |
-VEN1000000G | 7898134720023 | Farinha de Milho | Veneza | 7.99 | 0 | kg |
-COP1000000G | 7896267000128 | Arroz Branco | Copa | 6.99 | 0 | kg |  
-BUR5000000G | 7896267000135 | Arroz Branco | Buriti | 22.99 | 0 | kg |  
-HEI3490G | 7896383300096 | Vinagre de Álcool | Heinig | 2.99 | 0 | kg | 
-CHE3480G | 7896297910688 | Vinagre de Álcool | Chemim | 3.49 | 0 | kg |
-PRI500000G | 7896407500112 | Vinagre de Alcool | Prime | 2.99 | 0 | kg | 
-PRI750000G | 7896407500013 | Vinagre de Ácool | Prime | 3.99 | 0 | kg |
-COA900000G | 7896279600538 | Óleo de Soja | COAMO | 9.98 | 0 | kg |
-APT400000G | 7896327511335 | Baunilha | Apti | 6.99 | 0 | kg | 
-MAN10000G | 7896722501016 | Chá de Camomila | Mandiervas | 5.99 | 0 | kg | 
-MAN40000G | 7896722506578 | Chá Mate | Mandiervas | 5.99 | 0 | kg |
-BON280000G | 7899659900785 | Grão de Milho | Bonare | 4.99 | 0 | kg |
-QUE280000G | 7896102500608 | Grão de Milho | Quero | 5.49 | 0 | kg |  
-SOF280000G | 7896292343702 | Grão de Milho | SOFRUTA | 4.99 | 0 | kg |  
-ACC180000G | 7896332722825 | CHACHUP | Accert | 5.99 | 0 | kg | 
-PES125000G | 7896114900045 | Sardinhas | PESCADOR | 7.98 | 0 | kg |
-CAS500000G | 7896048285904 | Maionese | Castelo | 7.99 | 0 | kg | 
-NOB370000G | 7898623463233 | Maionese | Nobre Sabor | 4.99 | 0 | kg |
-HEL500000G | 7894000050034 | Maionese | HELLMANN'S | 11.99 | 0 | kg | 
-JUR300000G | 7896348200874 | Pepino em Conserva | Jureia | 11.99 | 0 | kg |  
-SIT4000000G | 7898969994002 | Carvão | Sitio Novo | 22.9 | 0 | kg | 
-ACH300000G | 630941717455 | Extrato de Tomate | Achei | 2.49 | 0 | kg | 
-ISA130000G | 7896022085209 | Bolacha Toons | Isabela | 4.5 | 0 | kg |
-FUG0G | 7897517206086 | Extrato de Tomate | Fugini | 2.99 | 0 | kg | 
-TOM300000G | 7899659901331 | Extrato de Tomate | Tomadoro | 2.99 | 0 | kg | 
-DIV200000G | 7898418144910 | Leite de Coco | Divina Mesa | 4.99 | 0 | kg | 
-MOC3955000G | 7891030300207 | Doce de Leite | MOCOCA | 5.99 | 0 | kg |
-PIN200000G | 7898307570875 | Vinho | Pinheirense | 15 | 0 | kg |
-GOL200000G | 7898274690699 | Vinho Suave | GOLE do SUL | 19.98 | 0 | kg |
-MAI200000G | 7896004401775 | Leite de CoCo | MAIS COCO | 2.98 | 0 | kg |  
-PAF3000G | 736372060570 | Leite Condensado | PAFIA | 6.99 | 0 | kg |  
-APT0G | 7896327512240 | Fermento Biológico | Apti | 11.99 | 0 | kg |
-ALT0G | 7898929930033 | Café Torrado Moido | Alto da Serra | 19.98 | 0 | kg |
-DAM0G | 7896019115278 | Café Torrado e Moido Extra Forte | Damasco | 31.98 | 0 | kg |
-ADO0G | 7891104393104 | Adoçante | Adocyl | 7.99 | 0 | kg |
-VAL0G | 7898045700336 | Doce de Goiabada | Val | 5.99 | 0 | kg | 
-BOM0G | 7896348300994 | Filtro de Papel | BOM JESUS | 5.99 | 0 | kg | 
-3 C0G | 7896005803714 | Filtro de Papel | 3 Corações | 4.99 | 0 | kg |
-IGU0G | 7896081805299 | Filtro de Papel | Iguaçu | 5.99 | 0 | kg | 
-AUR0G | 7891164027704 | Leite em Pó Integral | Aurora | 18.99 | 0 | kg |  
-ZAL0G | 7898112977029 | Coador de Café | Zalena | 9.98 | 0 | kg |  
-API0G | 7896327512363 | Amido de Milho | Apiti | 12.99 | 0 | kg |
-CHÃ0G | 7891098002044 | Chã de Camomila e CIdreira & Maracuja | Chã de Leão | 9.98 | 0 | kg |  
-TOD0G | 7896022205775 | Macarrão de Jémola Spaghetti | TODESCHINI | 5.99 | 0 | kg |   
-CAL0G | 7896273905301 | FAROFA MIX MILHO + MANDIOCA | Caldo Bom | 7.99 | 0 | kg |   
-CAM4000000G | 7898169430027 | Carvão | Campeste | 22.9 | 0 | kg |
-PIT0G | 7896003739428 | Bolacha Pão de Chapa | Pit Stop | 5.98 | 0 | kg |
-SIN0G | 7892300004788 | Canjiquinha de Xerém | Sinhá | 4.99 | 0 | kg |
-D .0G | 7897060600041 | Fubáde Milho Amarelo | D .Pedro | 5.99 | 0 | kg |
-PAN0G | 7898994503422 | Erva Mate P/ Chimarrão | PANCHEIRA | 9.98 | 0 | kg |
-BOQ0G | 7897154800074 | Erva Mate com Açucar | Boqueirão | 11.99 | 0 | kg |
-DON0G | 7898043584624 | Sal Grosso | Dona Nena | 4.99 | 0 | kg | 
-ZIC0G | 7898102710032 | Sal Tradicional | ZICO | 2.99 | 0 | kg |  
-JÓI0G | 7896232115680 | Macarrão de Sêmola com Ovo | Jóia | 5.99 | 0 | kg |  
-FLO0G | 7896232111170 | Macarrão de Ovos | FLORIANI | 4.99 | 0 | kg |   
-DOB0G | 7896460400138 | Farofa Pronta | DOBÁ | 4.99 | 0 | kg |  
-NUT0G | 7898960866407 | Gelatina de Limão | Nuttry | 1.99 | 0 | kg | 
-NEI0G | 7896706300420 | Pudim de Chocolate | NEILAR | 1.99 | 0 | kg |  
-PIR0G | 7896002100014 | Bebida 51 | Pirassunga | 16.99 | 0 | kg | 
-MIS0G | 7898172661883 | Bebida Vódka Tridestilada | MISKOV | 18.99 | 0 | kg | 
-JAM0G | 7898172660107 | CACHAÇA ADOÇADA | JAMEL | 17.99 | 0 | kg |   
-BAI0G | 7896092501340 | COQUETEL DE MARACUJA | Baianinha | 19.98 | 0 | kg |
-VEL0G | 7896050200124 | CACHAÇA ADOÇADA | VELHO BARREIRO | 19.98 | 0 | kg |  
-BEL0G | 7898947813660 | Vinho Suave Uva Bordô | Bella Vista | 14.99 | 0 | kg | 
-CAM0G | 7896931611353 | Vinho Tinto Seco | Campo Largo | 15.98 | 0 | kg | 
-BAR0G | 7898422671129 | COCKTAIL DE COCO | BARKAN | 22.95 | 0 | kg | 
-VIL0G | 7898922047899 | Vinho de Mesa Branco | Vila Trento | 14.9 | 0 | kg | 
-COL0G | 7896100500792 | Vinho Branco Suave | Colina | 13.99 | 0 | kg |  
-PER0G | 7897128910600 | BATIDA DE AMENDOIN | Peroba | 22.95 | 0 | kg | 
-BOL0G | 7908256520941 | Bola Inflavel de Futbol | Bola Cruz | 35 | 0 | kg | 
-ISA0UN | 7896022085216 | Toons Bolacha de Morango  | Isabela | 4.99 | 0 | un | 
-ELM75000G;7892840822347;Doritos;Elma Chips;15;0;kg
-CAR1000000G;7896894900013;Açucar refinado;Caravelas;5.99;0;kg
-FAR1000000G;7891080007705;Farinha de Trigo;Farina;5.99;10;kg
-SUD1000000G;7896021800209;Farinha de Trigo Enriquecida;Sudoeste;5.99;0;kg
-FAR5000000G;7891080007842;Farinha de Trigo Branquinha;Farina;19.9;0;kg
-D. 1000000G;7897060600027;Farinha de Milho Amarelo;D. Pedro;7.99;0;kg
-VEN1000000G;7898134720023;Farinha de Milho;Veneza;7.99;0;kg
-COP1000000G;7896267000128;Arroz Branco;Copa;6.99;0;kg
-BUR5000000G;7896267000135;Arroz Branco;Buriti;22.99;0;kg
-HEI3490G;7896383300096;Vinagre de Álcool;Heinig;2.99;0;kg
-CHE3480G;7896297910688;Vinagre de Álcool;Chemim;3.49;0;kg
-PRI500000G;7896407500112;Vinagre de Alcool;Prime;2.99;0;kg
-PRI750000G;7896407500013;Vinagre de Ácool;Prime;3.99;0;kg
-COA900000G;7896279600538;Óleo de Soja;COAMO;9.98;0;kg
-APT400000G;7896327511335;Baunilha;Apti;6.99;0;kg
-MAN10000G;7896722501016;Chá de Camomila;Mandiervas;5.99;0;kg
-MAN40000G;7896722506578;Chá Mate;Mandiervas;5.99;0;kg
-BON280000G;7899659900785;Grão de Milho;Bonare;4.99;0;kg
-QUE280000G;7896102500608;Grão de Milho;Quero;5.49;0;kg
-SOF280000G;7896292343702;Grão de Milho;SOFRUTA;4.99;0;kg
-ACC180000G;7896332722825;CHACHUP;Accert;5.99;0;kg
-PES125000G;7896114900045;Sardinhas;PESCADOR;7.98;0;kg
-CAS500000G;7896048285904;Maionese;Castelo;7.99;0;kg
-NOB370000G;7898623463233;Maionese;Nobre Sabor;4.99;0;kg
-HEL500000G;7894000050034;Maionese;HELLMANN'S;11.99;0;kg
-JUR300000G;7896348200874;Pepino em Conserva;Jureia;11.99;0;kg
-SIT4000000G;7898969994002;Carvão;Sitio Novo;22.9;0;kg
-ACH300000G;630941717455;Extrato de Tomate;Achei;2.49;0;kg
-ISA130000G;7896022085209;Bolacha Toons;Isabela;4.5;0;kg
-FUG0G;7897517206086;Extrato de Tomate;Fugini;2.99;0;kg
-TOM300000G;7899659901331;Extrato de Tomate;Tomadoro;2.99;0;kg
-DIV200000G;7898418144910;Leite de Coco;Divina Mesa;4.99;0;kg
-MOC3955000G;7891030300207;Doce de Leite;MOCOCA;5.99;0;kg
-PIN200000G;7898307570875;Vinho;Pinheirense;15;0;kg
-GOL200000G;7898274690699;Vinho Suave;GOLE do SUL;19.98;0;kg
-MAI200000G;7896004401775;Leite de CoCo;MAIS COCO;2.98;0;kg
-PAF3000G;736372060570;Leite Condensado;PAFIA;6.99;0;kg
-APT0G;7896327512240;Fermento Biológico;Apti;11.99;0;kg
-ALT0G;7898929930033;Café Torrado Moido;Alto da Serra;19.98;0;kg
-DAM0G;7896019115278;Café Torrado e Moido Extra Forte;Damasco;31.98;0;kg
-ADO0G;7891104393104;Adoçante;Adocyl;7.99;0;kg
-VAL0G;7898045700336;Doce de Goiabada;Val;5.99;0;kg
-BOM0G;7896348300994;Filtro de Papel;BOM JESUS;5.99;0;kg
-3 C0G;7896005803714;Filtro de Papel;3 Corações;4.99;0;kg
-IGU0G;7896081805299;Filtro de Papel;Iguaçu;5.99;0;kg
-AUR0G;7891164027704;Leite em Pó Integral;Aurora;18.99;0;kg
-ZAL0G;7898112977029;Coador de Café;Zalena;9.98;0;kg
-API0G;7896327512363;Amido de Milho;Apiti;12.99;0;kg
-CHÃ0G;7891098002044;Chã de Camomila e CIdreira & Maracuja;Chã de Leão;9.98;0;kg
-TOD0G;7896022205775;Macarrão de Jémola Spaghetti;TODESCHINI;5.99;0;kg
-CAL0G;7896273905301;FAROFA MIX MILHO + MANDIOCA;Caldo Bom;7.99;0;kg
-CAM4000000G;7898169430027;Carvão;Campeste;22.9;0;kg
-PIT0G;7896003739428;Bolacha Pão de Chapa;Pit Stop;5.98;0;kg
-SIN0G;7892300004788;Canjiquinha de Xerém;Sinhá;4.99;0;kg
-D .0G;7897060600041;Fubáde Milho Amarelo;D .Pedro;5.99;0;kg
-PAN0G;7898994503422;Erva Mate P/ Chimarrão;PANCHEIRA;9.98;0;kg
-BOQ0G;7897154800074;Erva Mate com Açucar;Boqueirão;11.99;0;kg
-DON0G;7898043584624;Sal Grosso;Dona Nena;4.99;0;kg
-ZIC0G;7898102710032;Sal Tradicional;ZICO;2.99;0;kg
-JÓI0G;7896232115680;Macarrão de Sêmola com Ovo;Jóia;5.99;0;kg
-FLO0G;7896232111170;Macarrão de Ovos;FLORIANI;4.99;0;kg
-DOB0G;7896460400138;Farofa Pronta;DOBÁ;4.99;0;kg
-NUT0G;7898960866407;Gelatina de Limão;Nuttry;1.99;0;kg
-NEI0G;7896706300420;Pudim de Chocolate;NEILAR;1.99;0;kg
-PIR0G;7896002100014;Bebida 51;Pirassunga;16.99;0;kg
-MIS0G;7898172661883;Bebida Vódka Tridestilada;MISKOV;18.99;0;kg
-JAM0G;7898172660107;CACHAÇA ADOÇADA;JAMEL;17.99;0;kg
-BAI0G;7896092501340;COQUETEL DE MARACUJA;Baianinha;19.98;0;kg
-VEL0G;7896050200124;CACHAÇA ADOÇADA;VELHO BARREIRO;19.98;0;kg
-BEL0G;7898947813660;Vinho Suave Uva Bordô;Bella Vista;14.99;0;kg
-CAM0G;7896931611353;Vinho Tinto Seco;Campo Largo;15.98;0;kg
-BAR0G;7898422671129;COCKTAIL DE COCO;BARKAN;22.95;0;kg
-VIL0G;7898922047899;Vinho de Mesa Branco;Vila Trento;14.9;0;kg
-COL0G;7896100500792;Vinho Branco Suave;Colina;13.99;0;kg
-PER0G;7897128910600;BATIDA DE AMENDOIN;Peroba;22.95;0;kg
-BOL0G;7908256520941;Bola Inflavel de Futbol;Bola Cruz;35;0;kg
-ISA0UN;7896022085216;Toons Bolacha de Morango ;Isabela;4.99;0;un
-ISA130G;;Toons Bolacha de Chocolate;Isabela;4.5;0;g
+sku;gtin;name;brand;price;tax;measureUnit
+BOLBIF0G;7908256520941;Bola Inflavel de Futbol;Bola Cruz;35;;kg
+PERBA0G;7897128910600;BATIDA DE AMENDOIN;Peroba;22.95;;kg
+COLVBS0G;7896100500792;Vinho Branco Suave;Colina;13.99;;kg
+VILVMB0G;7898922047899;Vinho de Mesa Branco;Vila Trento;14.9;;kg
+BARCC0G;7898422671129;COCKTAIL DE COCO;BARKAN;22.95;;kg
+CAMVTS0G;7896931611353;Vinho Tinto Seco;Campo Largo;15.98;;kg
+BELVSU0G;7898947813660;Vinho Suave Uva Bordô;Bella Vista;14.99;;kg
+VELCA0G;7896050200124;CACHAÇA ADOÇADA;VELHO BARREIRO;19.98;;kg
+BAICA0G;7896092501302;COQUETEL DE AMENDOIN;BAIANINHA;19.98;;kg
+BAICC0G;7896092501326;COQUETEL DE COCO;BAIANINHA;19.98;;kg
+BAICM0G;7896092501340;COQUETEL DE MARACUJA;Baianinha;19.98;;kg
+JAMCA0G;7898172660107;CACHAÇA ADOÇADA;JAMEL;17.99;;kg
+MISBVT0G;7898172661883;Bebida Vódka Tridestilada;MISKOV;18.99;;kg
+PIRB50G;7896002100014;Bebida 51;Pirassunga;16.99;;kg
+NEIPB0G;7896706300376;Pudim de Baunilha;NEILAR;1.99;;kg
+NEIPM0G;7896706300390;Pudim de Morango;NEILAR;0;;kg
+NEIPC0G;7896706300420;Pudim de Chocolate;NEILAR;1.99;;kg
+NUTGA0G;7898960866377;Gelatina de Abacaxi;Nuttry;1.99;;kg
+NUTLIMGL0G;7898960866407;Gelatina de Limão;Nuttry;1.99;;kg
+DOBFP0G;7896460400138;Farofa Pronta;DOBÁ;4.99;;kg
+TODP0G;7896022205737;Parafuso;Todeschini;5.99;;kg
+FLOMO0G;7896232111170;Macarrão de Ovos;FLORIANI;4.99;;kg
+JOIMSO0G;7896232115680;Macarrão de Sêmola com Ovo;Jóia;5.99;;kg
+ZICST0G;7898102710032;Sal Tradicional;ZICO;2.99;;kg
+DONSG0G;7898043584624;Sal Grosso;Dona Nena;4.99;;kg
+BOQEMA0G;7897154800074;Erva Mate com Açucar;Boqueirão;11.99;;kg
+PANEMP0G;7898994503422;Erva Mate P/ Chimarrão;PANCHEIRA;9.98;;kg
+DPEFMA0G;7897060600041;Fubá de Milho Amarelo;D. Pedro;5.99;;kg
+SINCX0G;7892300004788;Canjiquinha de Xerém;Sinhá;4.99;;kg
+PITBPC0G;7896003739428;Bolacha Pão de Chapa;Pit Stop;5.98;;kg
+CAMC0G;7898169430027;Carvão;Campeste;22.9;;kg
+CALFMM0G;7896273905301;FAROFA MIX MILHO + MANDIOCA;Caldo Bom;7.99;;kg
+TODMSS0G;7896022205775;Macarrão de Sêmola Spaghetti;TODESCHINI;5.99;;kg
+CHACCE0G;7891098002044;Chá de Camomila e Cidreira & Maracujá;Chá de Leão;9.98;;kg
+APTAM0G;7896327512615;Amido de Milho;Apti;5.99;;kg
+APIAM0G;7896327512363;Amido de Milho;Apiti;12.99;;kg
+ZALCC0G;7898112977029;Coador de Café;Zalena;9.98;;kg
+AURLEP0G;7891164027704;Leite em Pó Integral;Aurora;18.99;;kg
+IGUFP0G;7896081805299;Filtro de Papel;Iguaçu;5.99;;kg
+3COFP0G;7896005803714;Filtro de Papel;3 Corações;4.99;;kg
+BOMFP0G;7896348300994;Filtro de Papel;BOM JESUS;5.99;;kg
+VALDG0G;7898045700336;Doce de Goiabada;Val;5.99;;kg
+ADOA0G;7891104393104;Adoçante;Adocyl;7.99;;kg
+DAMCTE0G;7896019115278;Café Torrado e Moido Extra Forte;Damasco;31.98;;kg
+ALTCTM0G;7898929930033;Café Torrado Moido;Alto da Serra;19.98;;kg
+APTF0G;7896327512967;Fermento;Apti;4.99;;kg
+APTFB0G;7896327512240;Fermento Biológico;Apti;11.99;;kg
+PAFLC0G;736372060570;Leite Condensado;PAFIA;6.99;;kg
+MAILC0G;7896004401775;Leite de Coco;MAIS COCO;2.98;;kg
+GOLVS0G;7898274690699;Vinho Suave;GOLE do SUL;19.98;;kg
+PINV0G;7898307570875;Vinho;Pinheirense;15;;kg
+MOCDL0G;7891030300207;Doce de Leite;MOCOCA;5.99;;kg
+DIVLC0G;7898418144910;Leite de Coco;Divina Mesa;4.99;;kg
+TOMET0G;7899659901331;Extrato de Tomate;Tomadoro;2.99;;kg
+FUGET0G;7897517206086;Extrato de Tomate;Fugini;2.99;;kg
+ISABT0G;7896022085209;Bolacha Toons;Isabela;4.5;;kg
+ACHET0G;630941717455;Extrato de Tomate;Achei;2.49;;kg
+SITC0G;7898969994002;Carvão;Sitio Novo;22.9;;kg
+JURPEC0G;7896348200874;Pepino em Conserva;Jureia;11.99;;kg
+HELM0G;7894000050034;Maionese;HELLMANN'S;11.99;;kg
+NOBM0G;7898623463233;Maionese;Nobre Sabor;4.99;;kg
+CASM0G;7896048285904;Maionese;Castelo;7.99;;kg
+PESS0G;7896114900045;Sardinhas;PESCADOR;7.98;;kg
+ACCC0G;7896332722825;CHACHUP;Accert;5.99;;kg
+SOFGM0G;7896292343702;Grão de Milho;SOFRUTA;4.99;;kg
+QUEGM0G;7896102500608;Grão de Milho;Quero;5.49;;kg
+BONGM0G;7899659900785;Grão de Milho;Bonare;4.99;;kg
+MANCM0G;7896722506578;Chá Mate;Mandiervas;5.99;;kg
+APTFBC0G;7896327511984;Farinha de Bolo Chocolate;Apti;6.99;;kg
+APTB0G;7896327511335;Baunilha;Apti;6.99;;kg
+COAOS0G;7896279600538;Óleo de Soja;COAMO;9.98;;kg
+PRIVA0G;7896407500013;Vinagre de Ácool;Prime;3.99;;kg
+PRIVA0G-2;7896407500112;Vinagre de Alcool;Prime;2.99;;kg
+CHEVA0G;7896297910688;Vinagre de Álcool;Chemim;3.49;;kg
+HEIVA0G;7896383300096;Vinagre de Álcool;Heinig;2.99;;kg
+BURAB0G;7896267000135;Arroz Branco;Buriti;22.99;;kg
+COPFP0G;7898096590085;Feijão Preto;Copa;6.99;;kg
+COPAB0G;7896267000128;Arroz Branco;Copa;6.99;;kg
+DPEFMB0G;7897060600010;Farinha de Milho Branca;D. Pedro;9.98;;kg
+VENFM0G;7898134720023;Farinha de Milho;Veneza;7.99;;kg
+DPEFMA0G-2;7897060600027;Farinha de Milho Amarelo;D. Pedro;7.99;;kg
+FARFTB0G;7891080007842;Farinha de Trigo Branquinha;Farina;19.9;;kg
+SUDFTE0G;7896021800209;Farinha de Trigo Enriquecida;Sudoeste;5.99;;kg
+FARFT0G;7891080007705;Farinha de Trigo;Farina;5.99;;kg
+CARAR0G;7896894900013;Açucar refinado;Caravelas;5.99;;kg
+ELMD0G;7892840822347;Doritos;Elma Chips;15;;kg
+JUSLCI395G;7896722506578;Leite Condensado Integral;Jussara;5.99;;g
+FLEMPB450G;7896004401775;Mistura P/ Bolo Laranja;Fleischmann;2.98;;g
+MOCLCM395G;7891030300207;Leite Condensado Mistura Láctea;Mococa;5.99;;g
+BONMVE170G;7899659900785;Milho Verde em Conserva Lata;Bonare;4.99;;g
+QUEMVE170G;7896102500608;Milho Verde em Conserva Lata;Quero;4.99;;g
+TIRQMF150G;7896348200874;Queijo Mussarela Fatiado;Tirolez;11.99;;g
+POLQMF200G;7896332722825;Queijo Minas Frescal;Polenghi;5.99;;g
+QUAMCS200G;7898623463233;Manteiga c/ Sal Pote;Qualy;4.99;;g
+PESSMT83G;7896114900045;Sardinha Molho Tomate Lata;Pescador;7.98;;g
+HELMPR500G;7894000050034;Maionese Pote Regular;Hellmann's;11.99;;g
+CASMP500G;7896048285904;Maionese Pote;Castelo;7.99;;g
+3COCTE250G;630941717455;Café Torrado e Moído;3 Corações;2.49;;g
+FUGMT340G;7897517206086;Molho de Tomate Tradicional Sachê;Fugini;2.99;;g
+TOMMT300G;7899659901331;Molho de Tomate Pouck;Tomadoro;2.99;;g
+KICFCT1000G;7898102710032;Feijão Carioca Tipo 1;Kicaldo;2.99;;kg
+CARARP1000G;7896894900013;Açúcar Refinado Pacote;Caravelas;5.99;;kg
+SUDFTT1000G;7896021800209;Farinha de Trigo Tipo 1 Pacote;Sudoeste;5.99;;kg
+VALGT300G;7898045700336;Goiabada Tablete;Val;5.99;;g
+PIRLUI1000L;7891104393104;Leite UHT Integral;Piracanjuba;7.99;;L
+VIGRCP200G;7896327512967;Requeijão Cremoso Pote;Vigor;4.99;;g
+VIGQPF150G;7896327512240;Queijo Prato Fatiado;Vigor;11.99;;g
+GALAOE500ML;7891164027704;Azeite de Oliva Extravirgem;Gallo;18.99;;ml
+PREMP150ML;7896348300994;Molho de Pimenta;Predilecta;5.99;;ml
+TODAEP400G;7896005803714;Achocolatado em Pó;Toddy;4.99;;g
+VIGQC250G;7896327512363;Queijo Coalho;Vigor;12.99;;g
+LOWAL100ML;7898418144910;Adoçante Liquido;Lowçucar;4.99;;ml
+PASWE750ML;7898929930033;Whisky Escocês;Passport;19.98;;ml
+TIOAPT1000G;7896003739428;Arroz Parbolizado Tipo 1;Tio João;5.98;;kg
+NESLCI395G;7892300004788;Leite Condensado Integral Lata;Nestlé Moça;4.99;;g
+BAUPMC240G;7896273905301;Pão de Mel Coberto Chocolate;Bauducco;7.99;;g
+ITADLP400G;7896460400138;Doce de Leite Pastoso;Itambé;4.99;;g
+YOKMPP500G;7896022205775;Mistura P/ Pão de Queijo;Yoki;5.99;;g
+FUGMT340G-2;7897517206086;Molho de Tomate Tradicional Sachê;Fugini;2.99;;g
+NESFLT200G;7896232115680;Farinha Láctea Tradicional;Nestlé;5.99;;g
+NESAEP400G;7896232111170;Achocolatado em Pó;Nestlé;5.99;;g
+YOKFM500G;7896022205737;Flocão de Milho;Yoki;5.99;;g
+PILCEP500G;7896267000128;Café em Pó Extra Forte;Pilão;6.99;;g
+DROCC10G;7897154800074;Chá de Camomila;Dr. Oetker;11.99;;g
+VITBIA200G;7898994503422;Biscoito Integral Aveia e Mel;Vitao;9.98;;g
+KINMPI500G;7898112977029;Mistura para Pão Integral;King Mix;9.98;;g
+SAZTCP300G;7897060600010;Tempero Completo com Pimenta;Sazón;9.98;;g
+KITTPA60G;7898134720023;Tempero P/ Arroz;Kitano;7.99;;g
+SAZTCP300G-2;7897060600027;Tempero Completo Sem Pimenta;Sazón;7.99;;g
+NISMIG80G;7898096590085;Macarrão Instantâneo Galinha Caipira;Nissin;6.99;;g
+OMOSEP800G;7896383300096;Sabão em Pó Lavagem Perfeita;Omo;3.99;;g
+YPELIMDLL500ML;7896297910688;Detergente Líquido Limão;Ypê;3.99;;ml
+FORPQC400G;7896407500013;Pão de Queijo Congelado;Forno de Minas;3.99;;g
+FORPBC400G;7896407500112;Pão de Batata Congelado;Forno de Minas;2.99;;g
+YOKFMF500G;7896022085216;Farinha de Milho Flocada;Yoki;4.99;;g
+YOKFMT500G;7896022085209;Farinha de Mandioca Torrada;Yoki;4.5;;g
+RENFTT1000G;7896706300420;Farinha de Trigo Tipo 1;Renata;2.99;;kg
+RENFTI1000G;7896706300390;Farinha de Trigo Integral;Renata;2.99;;kg
+RENFTP1000G;7896706300376;Farinha de Trigo P/ Pastéis;Renata;2.99;;kg
+ISATBC130G;;Toons Bolacha de Chocolate;Isabela;4.5;0;g

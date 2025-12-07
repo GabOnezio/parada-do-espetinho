@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { Trash, SquarePen, ListRestart } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
@@ -28,6 +28,7 @@ import {
   readHiddenSeedGtins,
   persistHiddenSeedGtins
 } from '../data/productSeeds';
+import { saveProducts } from '../utils/idb';
 
 type Product = {
   id: string;
@@ -37,6 +38,7 @@ type Product = {
   price: number;
   cost?: number;
   weight?: number;
+  sku?: string;
   stock: number;
   isActive?: boolean;
   categoryKey?: CategoryKey;
@@ -153,6 +155,9 @@ const ProductsPage = () => {
     }
     | null
   >(null);
+  const productsRef = useRef<Product[]>([]);
+  const hasSyncedAllSkusRef = useRef(false);
+  const autoSeedRestoreRef = useRef(false);
 
   const hiddenSeedSet = useMemo(() => new Set(hiddenSeedGtins), [hiddenSeedGtins]);
   const seedCategoryMap = useMemo(() => buildSeedCategoryMap(hiddenSeedSet), [hiddenSeedSet]);
@@ -210,7 +215,7 @@ const ProductsPage = () => {
           <>
             <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} aria-label="Fechar categorias" />
             <div
-              className={`absolute z-40 w-full max-h-64 overflow-y-auto border border-slate-200 bg-white shadow-lg ${dropUp ? 'bottom-[102%] rounded-t-xl' : 'mt-1 rounded-b-xl'
+              className={`absolute z-50 w-full max-h-64 overflow-y-auto border border-slate-200 bg-white shadow-lg ${dropUp ? 'bottom-[102%] rounded-t-xl' : 'mt-1 rounded-b-xl'
                 }`}
               style={
                 dropUp
@@ -250,6 +255,19 @@ const ProductsPage = () => {
   const notifySW = () => {
     if (navigator.serviceWorker?.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'REFRESH_PRODUCTS' });
+    }
+  };
+
+  const persistProductCaches = (list: Product[]) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('productsCache', JSON.stringify(list));
+      localStorage.setItem('pdv-products-cache', JSON.stringify(list));
+      saveProducts(list as any).catch(() => {
+        /* ignore */
+      });
+    } catch {
+      /* ignore */
     }
   };
 
@@ -294,7 +312,8 @@ const ProductsPage = () => {
     const hiddenSetToUse = customHidden || hiddenSeedSet;
     const merged = mergeWithSeedProducts<Product>(data, hiddenSetToUse) as Product[];
     setProducts(merged);
-    localStorage.setItem('productsCache', JSON.stringify(merged));
+    productsRef.current = merged;
+    persistProductCaches(merged);
     setCategoryMap((prev) => {
       const sanitizedPrev = { ...prev };
       hiddenSetToUse.forEach((gtin) => {
@@ -346,15 +365,136 @@ const ProductsPage = () => {
   };
 
   const generateSkuFrom = (data: { name: string; brand: string; weight: number; measureUnit: string }) => {
-    // simple SKU: slug(name)-slug(brand)-weight+unit
-    const slug = (s: string) =>
-      s
+    const brandMap: Record<string, string> = {
+      'doritos': 'DOR',
+      'brahma': 'BRA',
+      'coca cola': 'COC',
+      'parada do espetinho': 'PDE'
+    };
+    const flavorMap: Record<string, string> = {
+      'limao': 'LIM',
+      'limão': 'LIM',
+      'elma': 'ELM',
+      'frango': 'FRG',
+      'carne': 'CRN',
+      'linguica': 'LIN',
+      'linguiça': 'LIN'
+    };
+    const typeMap: Record<string, string> = {
+      'chips': 'CHP',
+      'espetinho': 'ESP',
+      'refrigerante': 'REF',
+      'cerveja': 'CERV',
+      'molho de tomate': 'MT'
+    };
+
+    const normalize = (text: string) =>
+      text
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-    const w = data.weight ? String(data.weight).replace(/\D/g, '') : '0';
-    return `${slug(data.name)}-${slug(data.brand)}-${w}${data.measureUnit || 'un'}`;
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9 ]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const extractFlavor = (name: string) => {
+      for (const key of Object.keys(flavorMap)) {
+        if (normalize(name).includes(key)) return flavorMap[key];
+      }
+      return '';
+    };
+
+    const extractType = (name: string) => {
+      const norm = normalize(name);
+      for (const key of Object.keys(typeMap)) {
+        if (norm.includes(key)) return typeMap[key];
+      }
+      const parts = norm.split(' ').filter((p) => p && !['de', 'do', 'da', 'para', 'com', 'sem'].includes(p));
+      if (!parts.length) return '';
+      return parts
+        .slice(0, 3)
+        .map((p) => p[0])
+        .join('')
+        .toUpperCase();
+    };
+
+    const normBrand = normalize(data.brand || '');
+    const brandCode = brandMap[normBrand] || (data.brand ? data.brand.slice(0, 3).toUpperCase() : 'SKU');
+    const flavorCode = extractFlavor(data.name || '');
+    const typeCode = extractType(data.name || '');
+
+    let peso = Number(data.weight ?? 0);
+    let unidade = normalize(data.measureUnit || '');
+    if (unidade === 'kg') peso = peso * 1000;
+    if (unidade === 'g') peso = peso;
+    if (unidade === 'ml') peso = peso;
+    if (unidade === 'l') peso = peso * 1000;
+    if (!unidade || unidade === 'un') unidade = 'un';
+    const pesoStr = Number.isFinite(peso) ? String(Math.round(peso)) : '0';
+    const unidadeCode = unidade === 'kg' || unidade === 'g' ? 'G' : unidade.toUpperCase();
+
+    return `${brandCode}${flavorCode}${typeCode}${pesoStr}${unidadeCode}`;
+  };
+
+  const syncSkuHistoryFromProducts = async (list: Product[]) => {
+    if (!list || !list.length) return;
+    try {
+      const existingRes = await api.get('/skus');
+      const existingItems = Array.isArray(existingRes.data) ? existingRes.data : [];
+      const gtinSet = new Set<string>();
+      const skuSet = new Set<string>();
+      existingItems.forEach((it: any) => {
+        if (it.gtin) gtinSet.add(String(it.gtin));
+        if (it.sku) skuSet.add(String(it.sku));
+      });
+
+      const customEntries = list.filter(
+        (p) => p.sku && !skuSet.has(p.sku) && (!p.gtin || !gtinSet.has(String(p.gtin)))
+      );
+
+      for (const p of customEntries) {
+        const sku = (p.sku || '').trim();
+        if (!sku) continue;
+        try {
+          await api.post('/skus', {
+            sku,
+            gtin: p.gtin,
+            name: p.name,
+            brand: p.brand,
+            price: p.price,
+            tax: p.cost,
+            measureUnit: p.measureUnit
+          });
+          skuSet.add(sku);
+          if (p.gtin) gtinSet.add(String(p.gtin));
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const missing = list.filter((p) => {
+        const candidateSku = generateSkuFrom({ name: p.name, brand: p.brand, weight: p.weight || 0, measureUnit: p.measureUnit || 'kg' });
+        const gtinKey = p.gtin ? String(p.gtin) : null;
+        return (!gtinKey || !gtinSet.has(gtinKey)) && !skuSet.has(candidateSku);
+      });
+
+      if (!missing.length) return;
+
+      await api.post('/skus/batch/generate', {
+        products: missing.map((p) => ({
+          id: p.id,
+          name: p.name,
+          brand: p.brand,
+          weight: p.weight || 0,
+          measureUnit: p.measureUnit || 'kg',
+          price: p.price,
+          cost: p.cost,
+          gtin: p.gtin
+        }))
+      });
+    } catch (err) {
+      // ignore sync errors
+    }
   };
 
   const load = async (query?: string, customHidden?: Set<string>) => {
@@ -375,7 +515,8 @@ const ProductsPage = () => {
   };
 
   useEffect(() => {
-    const storedHidden = readHiddenSeedGtins();
+    const storedHidden = []; // força exibir todos os seeds para repor estoque completo
+    persistHiddenSeedGtins(storedHidden);
     setHiddenSeedGtins(storedHidden);
     const storedCats = localStorage.getItem(CATEGORY_STORE_KEY);
     let parsedCats: Record<string, CategoryKey> = {};
@@ -412,29 +553,60 @@ const ProductsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
+
+  useEffect(() => {
+    if (hasSyncedAllSkusRef.current || !products.length) return;
+    hasSyncedAllSkusRef.current = true;
+    syncSkuHistoryFromProducts(products);
+  }, [products]);
+
+  const normalizeText = (txt: string) =>
+    txt
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+  const keywordCategories: Array<{ key: CategoryKey; pattern: RegExp }> = [
+    { key: 'padaria', pattern: /(bolacha|biscoit|pao|pão|massa|farinha|mistura|pudim)/i },
+    { key: 'doces_sobremesas', pattern: /(chocolate|doce|bala|gelatina|achocolat|wafer|barrinha)/i },
+    { key: 'bebidas_alcoolicas', pattern: /(cerveja|vinho|whisky|vodka|cachaça|cachaca)/i },
+    { key: 'bebidas_nao_alcoolicas', pattern: /(refrigerante|suco|agua|mineral|energ|achocolatado|refri)/i },
+    { key: 'carnes_peixes', pattern: /(carne|frango|peixe|sardinh|lingui|bovino|ave)/i },
+    { key: 'laticinios', pattern: /(queijo|leite|iogurt|manteig|requeij|mussarela)/i },
+    { key: 'temperos', pattern: /(tempero|pimenta|maionese|ketchup|molho|vinagre|mostarda|condimento)/i },
+    { key: 'limpeza', pattern: /(sabao|sabão|detergente|limp|desinfetante|omo)/i },
+    { key: 'hortifruti', pattern: /(fruta|legume|verdura|maçã|maca|banana|tomate)/i },
+    { key: 'esportes', pattern: /(bola|esporte)/i },
+    { key: 'alimentos', pattern: /(arroz|feijao|milho|macarrao|parafuso|ervilha)/i },
+    { key: 'chas', pattern: /(cha|mate|camomila)/i }
+  ];
+
+  const suggestCategoryFromName = (name: string): CategoryKey | null => {
+    const normalized = normalizeText(name);
+    const found = keywordCategories.find((k) => k.pattern.test(normalized));
+    return found ? (found.key as CategoryKey) : null;
+  };
+
+  useEffect(() => {
+    const hiddenCount = hiddenSeedGtins.length;
+    if (autoSeedRestoreRef.current) return;
+    if (hiddenCount > 0 && products.length < defaultProducts.length) {
+      autoSeedRestoreRef.current = true;
+      handleSeedMerge();
+    }
+  }, [products.length, hiddenSeedGtins.length]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { categoryKey, generateSku, ...payload } = form as any;
-    // If requested, generate SKU from fields
-    let skuToUse = payload.sku;
-    if (generateSku) {
+    let skuToUse = (payload.sku || '').trim();
+    if (!skuToUse || generateSku) {
       skuToUse = generateSkuFrom({ name: payload.name, brand: payload.brand, weight: payload.weight, measureUnit: payload.measureUnit });
-      payload.sku = skuToUse;
-      // register to history (best-effort)
-      try {
-        await api.post('/skus', {
-          sku: skuToUse,
-          gtin: payload.gtin,
-          name: payload.name,
-          brand: payload.brand,
-          price: payload.price,
-          tax: payload.cost,
-          measureUnit: payload.measureUnit
-        });
-      } catch (err) {
-        // ignore errors
-      }
     }
+    payload.sku = skuToUse;
 
     const chosenCategory = categoryKey;
     const tempProduct: Product = {
@@ -455,10 +627,16 @@ const ProductsPage = () => {
       isSeed: false
     };
 
-    // Optimistic add: first local, then API
-    applyProducts([...products, tempProduct]);
+    const currentList = productsRef.current;
+    const optimisticList = [tempProduct, ...currentList.filter((p) => p.id !== tempProduct.id)];
+    applyProducts(optimisticList);
     setCategoryMap((prev) => {
-      const next = { ...prev, [tempProduct.id]: chosenCategory, [payload.gtin]: chosenCategory, ...(skuToUse ? { [skuToUse]: chosenCategory } : {}) };
+      const next: Record<string, CategoryKey> = {
+        ...prev,
+        [tempProduct.id]: chosenCategory
+      };
+      if (payload.gtin) next[payload.gtin] = chosenCategory;
+      if (skuToUse) next[skuToUse] = chosenCategory;
       localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(next));
       return next;
     });
@@ -476,21 +654,28 @@ const ProductsPage = () => {
       categoryKey: (categories[0]?.key as CategoryKey) || ''
     });
 
+    syncSkuHistoryFromProducts([tempProduct]);
+
     try {
       const res = await api.post('/products', payload);
-      const created = res.data as Product;
-      applyProducts([...products.filter((p) => p.id !== tempProduct.id), created]);
+      const created = { ...(res.data as Product), sku: skuToUse, categoryKey: chosenCategory, isSeed: false } as Product;
+      const latest = productsRef.current;
+      const replaced = latest.map((p) => (p.id === tempProduct.id ? created : p));
+      const hasTemp = latest.some((p) => p.id === tempProduct.id);
+      const updated = hasTemp ? replaced : [created, ...latest.filter((p) => p.id !== created.id)];
+      applyProducts(updated);
       setCategoryMap((prev) => {
         const next = {
           ...prev,
           [created.id]: chosenCategory,
           [created.gtin]: chosenCategory,
-          ...(created.sku ? { [created.sku]: chosenCategory } : {})
+          ...(skuToUse ? { [skuToUse]: chosenCategory } : {})
         };
         localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(next));
         return next;
       });
       notifySW();
+      syncSkuHistoryFromProducts([created]);
     } catch (err) {
       // keep optimistic item; no-op
     }
@@ -503,8 +688,7 @@ const ProductsPage = () => {
       setHiddenSeedGtins(updatedHidden);
       persistHiddenSeedGtins(updatedHidden);
       const updatedProducts = products.filter((p) => p.id !== id);
-      setProducts(updatedProducts);
-      localStorage.setItem('productsCache', JSON.stringify(updatedProducts));
+      applyProducts(updatedProducts, new Set(updatedHidden));
       const newMap = { ...categoryMap };
       delete newMap[target.id];
       delete newMap[target.gtin];
@@ -516,8 +700,7 @@ const ProductsPage = () => {
     try {
       await api.delete(`/products/${id}`);
       const updated = products.filter((p) => p.id !== id);
-      setProducts(updated);
-      localStorage.setItem('productsCache', JSON.stringify(updated));
+      applyProducts(updated);
       const cleanedMap = { ...categoryMap };
       const removed = products.find((p) => p.id === id);
       if (removed) {
@@ -604,8 +787,7 @@ const ProductsPage = () => {
         const updatedList = products.map((p) =>
           p.id === editing.id ? { ...p, ...payload, categoryKey, isSeed: true } : p
         );
-        setProducts(updatedList);
-        localStorage.setItem('productsCache', JSON.stringify(updatedList));
+        applyProducts(updatedList);
         const newMap = { ...categoryMap, [editing.id]: categoryKey, [editing.gtin]: categoryKey };
         setCategoryMap(newMap);
         localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(newMap));
@@ -671,9 +853,8 @@ const ProductsPage = () => {
     const hiddenAll = defaultProducts.map((p) => p.gtin);
     setHiddenSeedGtins(hiddenAll);
     persistHiddenSeedGtins(hiddenAll);
-    setProducts([]);
+    applyProducts([], new Set(hiddenAll));
     setCategoryMap({});
-    localStorage.setItem('productsCache', JSON.stringify([]));
     localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify({}));
     notifySW();
 
@@ -861,11 +1042,11 @@ const ProductsPage = () => {
             </button>
           </div>
           {!isNewProductCollapsed && (
-            <form className="relative z-20 mt-4 space-y-3" onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-                <div className="md:col-span-1">
-                  <input
-                    placeholder="GTIN (Opcional)"
+              <form className="relative z-20 mt-4 space-y-3" onSubmit={handleSubmit}>
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                  <div className="md:col-span-1">
+                    <input
+                      placeholder="GTIN (Opcional)"
                     value={form.gtin}
                     onBlur={async (e) => {
                       const val = e.currentTarget.value.trim();
@@ -930,7 +1111,19 @@ const ProductsPage = () => {
               <input
                 placeholder="NOME"
                 value={form.name}
-                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const suggested = suggestCategoryFromName(val);
+                  setForm((prev) => ({
+                    ...prev,
+                    name: val,
+                    ...(suggested ? { categoryKey: suggested } : {})
+                  }));
+                  if (suggested) {
+                    const catLabel = categories.find((c) => c.key === suggested)?.label;
+                    if (catLabel) setCatFilter(catLabel);
+                  }
+                }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
                 required
               />
@@ -1213,32 +1406,32 @@ const ProductsPage = () => {
       {
         editing && (
           <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl p-5 md:p-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-charcoal">Editar produto</h3>
                 <button onClick={() => setEditing(null)} className="text-slate-500 hover:text-slate-700">
                   ✕
                 </button>
               </div>
-              <form className="mt-4 space-y-3" onSubmit={submitEdit}>
+              <form className="mt-3 space-y-2" onSubmit={submitEdit}>
                 <input
                   placeholder="GTIN (Opcional)"
                   value={editForm.gtin}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, gtin: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
                 />
                 <input
                   placeholder="NOME"
                   value={editForm.name}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
                   required
                 />
                 <input
                   placeholder="MARCA"
                   value={editForm.brand}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, brand: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
                   required
                 />
                 <div className="flex gap-2">
@@ -1250,7 +1443,7 @@ const ProductsPage = () => {
                         placeholder="0,00"
                         value={formatCurrency(editForm.price)}
                         onChange={(e) => setEditForm((prev) => ({ ...prev, price: parseCurrency(e.target.value) }))}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm leading-tight focus:border-primary focus:outline-none"
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
                     </div>
@@ -1264,7 +1457,7 @@ const ProductsPage = () => {
                         placeholder="0,00"
                         value={editForm.cost}
                         onChange={(e) => setEditForm((prev) => ({ ...prev, cost: Number(e.target.value) }))}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm leading-tight focus:border-primary focus:outline-none"
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">R$</span>
                     </div>
@@ -1280,12 +1473,12 @@ const ProductsPage = () => {
                         placeholder="0,00"
                         value={editForm.weight}
                         onChange={(e) => setEditForm((prev) => ({ ...prev, weight: Number(e.target.value) }))}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
                       />
                       <select
                         value={editForm.measureUnit}
                         onChange={(e) => setEditForm((prev) => ({ ...prev, measureUnit: e.target.value }))}
-                        className="mt-1 w-24 rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm focus:border-primary focus:outline-none"
+                        className="mt-1 w-24 rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
                       >
                         <option value="kg">kg</option>
                         <option value="g">g</option>
@@ -1303,7 +1496,7 @@ const ProductsPage = () => {
                       placeholder="0"
                       value={editForm.stock}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, stock: Number(e.target.value) }))}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1315,7 +1508,7 @@ const ProductsPage = () => {
                       placeholder="0"
                       value={editForm.stockMin}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, stockMin: Number(e.target.value) }))}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
                     />
                   </div>
                   <div className="w-1/2">
@@ -1325,7 +1518,7 @@ const ProductsPage = () => {
                       placeholder="0"
                       value={editForm.stockMax}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, stockMax: Number(e.target.value) }))}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-tight focus:border-primary focus:outline-none"
                     />
                   </div>
                 </div>

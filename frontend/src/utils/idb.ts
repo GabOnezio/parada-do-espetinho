@@ -13,6 +13,9 @@ type Product = {
   price: number;
   gtin: string;
   brand: string;
+  stock?: number;
+  stockMin?: number;
+  stockMax?: number;
   discountPercent?: number;
   isOnPromotion?: boolean;
 };

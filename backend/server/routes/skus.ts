@@ -9,6 +9,96 @@ const router = Router();
 const DATA_DIR = path.resolve(process.cwd(), 'backend', 'data');
 const HISTORY_FILE = path.join(DATA_DIR, 'historico_de_sku.txt');
 
+const brandMap: Record<string, string> = {
+  'doritos': 'DOR',
+  'brahma': 'BRA',
+  'coca cola': 'COC',
+  'parada do espetinho': 'PDE'
+};
+
+const flavorMap: Record<string, string> = {
+  'limao': 'LIM',
+  'limão': 'LIM',
+  'elma': 'ELM',
+  'frango': 'FRG',
+  'carne': 'CRN',
+  'linguica': 'LIN',
+  'linguiça': 'LIN'
+};
+
+const typeMap: Record<string, string> = {
+  'chips': 'CHP',
+  'espetinho': 'ESP',
+  'refrigerante': 'REF',
+  'cerveja': 'CERV',
+  'molho de tomate': 'MT'
+};
+
+function normalize(text: string) {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractFlavor(name: string) {
+  for (const key of Object.keys(flavorMap)) {
+    if (normalize(name).includes(key)) return flavorMap[key];
+  }
+  return '';
+}
+
+function extractType(name: string) {
+  const norm = normalize(name);
+  for (const key of Object.keys(typeMap)) {
+    if (norm.includes(key)) return typeMap[key];
+  }
+  // fallback: take initials of first three significant words
+  const parts = norm.split(' ').filter((p) => p && !['de', 'do', 'da', 'para', 'com', 'sem'].includes(p));
+  if (!parts.length) return '';
+  const initials = parts.slice(0, 3).map((p) => p[0]).join('').toUpperCase();
+  return initials;
+}
+
+function sanitizeBrandCode(brand: string) {
+  const norm = normalize(brand || '');
+  const compact = norm.replace(/[^a-z0-9]/g, '');
+  return (compact.slice(0, 3) || 'SKU').toUpperCase();
+}
+
+function generateCompactSku(p: { name: string; brand: string; weight?: number | string; measureUnit?: string }) {
+  const normBrand = normalize(p.brand || '');
+  const brandCode = brandMap[normBrand] || sanitizeBrandCode(p.brand);
+  const flavorCode = extractFlavor(p.name || '');
+  const typeCode = extractType(p.name || '');
+
+  let peso = Number(p.weight ?? 0);
+  let unidade = normalize(p.measureUnit || '');
+  if (unidade === 'kg') peso = peso * 1000;
+  if (unidade === 'g') peso = peso;
+  if (unidade === 'ml') peso = peso;
+  if (unidade === 'l') peso = peso * 1000;
+  if (!unidade || unidade === 'un') unidade = 'un';
+  const pesoStr = Number.isFinite(peso) ? String(Math.round(peso)) : '0';
+  const unidadeCode = unidade === 'kg' || unidade === 'g' ? 'G' : unidade.toUpperCase();
+
+  return `${brandCode}${flavorCode}${typeCode}${pesoStr}${unidadeCode}`.replace(/[^A-Z0-9-]/gi, '').toUpperCase();
+}
+
+function ensureUniqueSkus(products: Array<{ name: string; brand: string; weight?: number; measureUnit?: string; price?: number; cost?: number; gtin?: string }>) {
+  const seen: Record<string, number> = {};
+  return products.map((p, idx) => {
+    const base = generateCompactSku(p) || `SKU${idx + 1}`;
+    const count = seen[base] || 0;
+    seen[base] = count + 1;
+    const finalSku = count === 0 ? base : `${base}-${count + 1}`;
+    return { ...p, sku: finalSku };
+  });
+}
+
 async function ensureDataFile() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
@@ -67,41 +157,20 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 });
 
 router.post('/batch/generate', requireAuth, requireAdmin, async (req, res) => {
-  const { products } = req.body as { products?: Array<{ id: string; name: string; brand: string; weight: number; measureUnit: string; price?: number; cost?: number; gtin?: string }> };
+  const { products } = req.body as { products?: Array<{ id: string; name: string; brand: string; weight?: number; measureUnit?: string; price?: number; cost?: number; gtin?: string }> };
   if (!Array.isArray(products)) return res.status(400).json({ message: 'products array obrigatório' });
 
-  const slugify = (text: string) =>
-    text
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-  const generateSkuFrom = (p: any) => {
-    const w = p.weight ? String(p.weight).replace(/\D/g, '') : '0';
-    return `${slugify(p.name)}-${slugify(p.brand)}-${w}${p.measureUnit || 'un'}`;
-  };
-
   await ensureDataFile();
-  const raw = await fs.readFile(HISTORY_FILE, 'utf-8');
-  const lines = raw.split('\n').filter((l) => l.trim());
-  const existingSkus = new Set(lines.slice(1).map((l) => l.split(';')[0]));
 
-  const newLines: string[] = [];
-  for (const p of products) {
-    const sku = generateSkuFrom(p);
-    if (!existingSkus.has(sku)) {
-      newLines.push(`${sku};${p.gtin || ''};${p.name};${p.brand};${p.price ?? ''};${p.cost ?? ''};${p.measureUnit || ''}\n`);
-      existingSkus.add(sku);
-    }
-  }
+  const header = 'sku;gtin;name;brand;price;tax;measureUnit';
+  const entries = ensureUniqueSkus(products);
+  const out = [
+    header,
+    ...entries.map((p) => `${p.sku};${p.gtin || ''};${p.name};${p.brand};${p.price ?? ''};${p.cost ?? ''};${p.measureUnit || ''}`)
+  ].join('\n') + '\n';
+  await fs.writeFile(HISTORY_FILE, out, 'utf-8');
 
-  if (newLines.length > 0) {
-    await fs.appendFile(HISTORY_FILE, newLines.join(''), 'utf-8');
-  }
-
-  return res.json({ generated: newLines.length, message: `${newLines.length} SKUs gerados` });
+  return res.json({ generated: entries.length, message: `${entries.length} SKUs gerados` });
 });
 
 router.get('/export/txt', requireAuth, async (_req, res) => {
@@ -178,107 +247,17 @@ router.post('/batch/from-db', requireAuth, requireAdmin, async (_req, res) => {
   try {
     const products = await prisma.product.findMany({ where: { isActive: true } });
 
-    // Tabelas de mapeamento
-    const brandMap: Record<string, string> = {
-      'doritos': 'DOR',
-      'brahma': 'BRA',
-      'coca cola': 'COC',
-      'parada do espetinho': 'PDE',
-    };
-    const flavorMap: Record<string, string> = {
-      'limão': 'LIM',
-      'elma': 'ELM',
-      'frango': 'FRG',
-      'carne': 'CRN',
-      'linguiça': 'LIN',
-    };
-    const typeMap: Record<string, string> = {
-      'chips': 'CHP',
-      'espetinho': 'ESP',
-      'refrigerante': 'REF',
-      'cerveja': 'CERV',
-    };
-
-    function normalize(text: string) {
-      return text
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9 ]/g, '')
-        .trim();
-    }
-
-    function extractFlavor(name: string) {
-      for (const key of Object.keys(flavorMap)) {
-        if (normalize(name).includes(key)) return flavorMap[key];
-      }
-      return '';
-    }
-    function extractType(name: string) {
-      for (const key of Object.keys(typeMap)) {
-        if (normalize(name).includes(key)) return typeMap[key];
-      }
-      return '';
-    }
-
-    function generateSkuFrom(p: any) {
-      const brandCode = brandMap[normalize(p.brand)] || p.brand.slice(0,3).toUpperCase();
-      const flavorCode = extractFlavor(p.name);
-      const typeCode = extractType(p.name);
-      // Peso para gramas
-      let peso = Number(p.weight);
-      let unidade = normalize(p.measureUnit);
-      if (unidade === 'kg') peso = peso * 1000;
-      if (unidade === 'g') peso = peso;
-      if (unidade === 'ml') peso = peso; // para líquidos, manter ml
-      const pesoStr = String(Math.round(peso));
-      let unidadeCode = unidade === 'kg' || unidade === 'g' ? 'G' : unidade.toUpperCase();
-      // SKU final
-      return `${brandCode}${flavorCode}${typeCode}${pesoStr}${unidadeCode}`;
-    }
-
     await ensureDataFile();
-    const raw = await fs.readFile(HISTORY_FILE, 'utf-8');
-    const lines = raw.split('\n');
-    // preserve header (line 0)
-    const header = lines[0] || 'sku;gtin;name;brand;price;tax;measureUnit';
-    const dataLines = lines.slice(1).filter((l) => l.trim());
 
-    // map SKU -> index in dataLines
-    const skuIndexMap = new Map<string, number>();
-    for (let i = 0; i < dataLines.length; i++) {
-      const parts = dataLines[i].split(';');
-      const s = parts[0] || '';
-      if (s) skuIndexMap.set(s, i);
-    }
-
-    let generated = 0;
-    let updated = 0;
-    for (const p of products) {
-      const sku = generateSkuFrom(p);
-      const existingIdx = skuIndexMap.get(sku);
-      if (existingIdx === undefined) {
-        // append new
-        dataLines.push(`${sku};${p.gtin || ''};${p.name};${p.brand};${p.price ?? ''};${p.cost ?? ''};${p.measureUnit || ''}`);
-        skuIndexMap.set(sku, dataLines.length - 1);
-        generated++;
-      } else {
-        // update missing GTIN if present in product
-        const parts = dataLines[existingIdx].split(';');
-        const currentGtin = (parts[1] || '').trim();
-        if ((!currentGtin || currentGtin === '') && p.gtin) {
-          parts[1] = p.gtin;
-          dataLines[existingIdx] = parts.join(';');
-          updated++;
-        }
-      }
-    }
-
-    // write back file with header + dataLines
-    const out = [header, ...dataLines].join('\n') + '\n';
+    const header = 'sku;gtin;name;brand;price;tax;measureUnit';
+    const entries = ensureUniqueSkus(products);
+    const out = [
+      header,
+      ...entries.map((p) => `${p.sku};${p.gtin || ''};${p.name};${p.brand};${p.price ?? ''};${p.cost ?? ''};${p.measureUnit || ''}`)
+    ].join('\n') + '\n';
     await fs.writeFile(HISTORY_FILE, out, 'utf-8');
 
-    return res.json({ total: products.length, generated, updated, message: `${products.length} produtos processados, ${generated} SKUs gerados, ${updated} registros atualizados` });
+    return res.json({ total: products.length, generated: entries.length, message: `${products.length} produtos processados, ${entries.length} SKUs regravados` });
   } catch (error) {
     console.error('[SKU] Error generating from DB:', error);
     return res.status(500).json({ message: 'Erro ao gerar SKUs do banco' });
