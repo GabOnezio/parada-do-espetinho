@@ -1112,6 +1112,12 @@ const ProductsPage = () => {
           background: #e2e8f0;
           border-radius: 9999px;
         }
+        .allow-text-select { user-select: none; }
+        .allow-text-select input,
+        .allow-text-select select,
+        .allow-text-select textarea {
+          user-select: text;
+        }
       `}</style>
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
@@ -1245,7 +1251,7 @@ const ProductsPage = () => {
             </button>
           </div>
           {!isNewProductCollapsed && (
-              <form className="relative z-20 mt-4 space-y-3" onSubmit={handleSubmit}>
+              <form className="relative z-20 mt-4 space-y-3 allow-text-select" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
                   <div className="md:col-span-1">
                     <input
@@ -1655,7 +1661,7 @@ const ProductsPage = () => {
                   ✕
                 </button>
               </div>
-              <form className="mt-3 space-y-2" onSubmit={submitEdit}>
+              <form className="mt-3 space-y-2 allow-text-select" onSubmit={submitEdit}>
                 <input
                   placeholder="GTIN (Opcional)"
                   value={editForm.gtin}
