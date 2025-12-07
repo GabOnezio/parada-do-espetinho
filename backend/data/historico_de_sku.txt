@@ -1,0 +1,1 @@
+sku;gtin;name;brand;price;tax;measureUnit

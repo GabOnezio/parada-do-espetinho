@@ -65,9 +65,22 @@ const SkuHistoryPage = () => {
     setEditing(true);
   };
 
-  const handleEditStart = () => {
-    setEditContent(content);
-    setEditing(true);
+  const handleEditStart = async () => {
+    // Load the raw semicolon-delimited file for admin editing.
+    try {
+      const res = await api.get('/skus/export/txt');
+      // API returns plain text; ensure we set it as-is for editing.
+      if (typeof res.data === 'string') {
+        setEditContent(res.data);
+      } else if (res.data?.data) {
+        setEditContent(res.data.data);
+      } else {
+        setEditContent('');
+      }
+      setEditing(true);
+    } catch (err) {
+      alert('Erro ao carregar arquivo para edição');
+    }
   };
 
   const handleSaveConfirm = async () => {
@@ -94,6 +107,19 @@ const SkuHistoryPage = () => {
       alert('Erro ao gerar SKUs em lote');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleEditGtin = async (it: SkuEntry) => {
+    const newGtin = window.prompt(`Atualizar GTIN para SKU ${it.sku}`, it.gtin || '');
+    if (newGtin === null) return; // cancel
+    try {
+      await api.put('/skus/entry', { sku: it.sku, gtin: newGtin });
+      setMessage('✓ GTIN atualizado');
+      await load();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      alert('Erro ao atualizar GTIN');
     }
   };
 
@@ -196,7 +222,16 @@ const SkuHistoryPage = () => {
                     <div className="text-sm font-semibold">{it.sku}</div>
                     <div className="text-xs text-slate-500">{it.name} • {it.brand} {it.measureUnit ? `• ${it.measureUnit}` : ''}</div>
                   </div>
-                  <div className="text-xs text-slate-600">{it.price ? `R$ ${it.price}` : ''}</div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-slate-600">{it.price ? `R$ ${it.price}` : ''}</div>
+                    <button
+                      title="Editar GTIN"
+                      onClick={() => handleEditGtin(it)}
+                      className="px-2 py-1 rounded bg-amber-200 text-amber-800 text-xs"
+                    >
+                      Editar GTIN
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

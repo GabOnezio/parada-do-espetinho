@@ -414,57 +414,85 @@ const ProductsPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const { categoryKey, generateSku, ...payload } = form as any;
-      // If requested, generate SKU from fields
-      let skuToUse = payload.sku;
-      if (generateSku) {
-        skuToUse = generateSkuFrom({ name: payload.name, brand: payload.brand, weight: payload.weight, measureUnit: payload.measureUnit });
-        payload.sku = skuToUse;
-        // register to history
-        try {
-          await api.post('/skus', {
-            sku: skuToUse,
-            gtin: payload.gtin,
-            name: payload.name,
-            brand: payload.brand,
-            price: payload.price,
-            tax: payload.cost,
-            measureUnit: payload.measureUnit
-          });
-        } catch (err) {
-          // ignore errors
-        }
+    const { categoryKey, generateSku, ...payload } = form as any;
+    // If requested, generate SKU from fields
+    let skuToUse = payload.sku;
+    if (generateSku) {
+      skuToUse = generateSkuFrom({ name: payload.name, brand: payload.brand, weight: payload.weight, measureUnit: payload.measureUnit });
+      payload.sku = skuToUse;
+      // register to history (best-effort)
+      try {
+        await api.post('/skus', {
+          sku: skuToUse,
+          gtin: payload.gtin,
+          name: payload.name,
+          brand: payload.brand,
+          price: payload.price,
+          tax: payload.cost,
+          measureUnit: payload.measureUnit
+        });
+      } catch (err) {
+        // ignore errors
       }
-      const chosenCategory = categoryKey;
+    }
+
+    const chosenCategory = categoryKey;
+    const tempProduct: Product = {
+      id: `temp-${Date.now()}`,
+      name: payload.name,
+      brand: payload.brand,
+      gtin: payload.gtin,
+      price: payload.price,
+      cost: payload.cost,
+      weight: payload.weight,
+      stock: payload.stock,
+      stockMin: payload.stockMin,
+      stockMax: payload.stockMax,
+      measureUnit: payload.measureUnit,
+      sku: skuToUse,
+      isActive: true,
+      categoryKey: chosenCategory,
+      isSeed: false
+    };
+
+    // Optimistic add: first local, then API
+    applyProducts([...products, tempProduct]);
+    setCategoryMap((prev) => {
+      const next = { ...prev, [tempProduct.id]: chosenCategory, [payload.gtin]: chosenCategory, ...(skuToUse ? { [skuToUse]: chosenCategory } : {}) };
+      localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(next));
+      return next;
+    });
+    setForm({
+      name: '',
+      brand: '',
+      gtin: '',
+      price: 0,
+      cost: 0,
+      weight: 0,
+      stock: 0,
+      stockMin: 0,
+      stockMax: 0,
+      measureUnit: 'kg',
+      categoryKey: (categories[0]?.key as CategoryKey) || ''
+    });
+
+    try {
       await api.post('/products', payload);
-      setForm({
-        name: '',
-        brand: '',
-        gtin: '',
-        price: 0,
-        cost: 0,
-        weight: 0,
-        stock: 0,
-        stockMin: 0,
-        stockMax: 0,
-        measureUnit: 'kg',
-        categoryKey: (categories[0]?.key as CategoryKey) || ''
-      });
       const updated = await api.get('/products', { params: { q: search } });
       applyProducts(updated.data);
-      // associa categoria ao produto criado
-      const created = (updated.data as Product[]).find((p: Product) => p.gtin === form.gtin || p.name === form.name || p.sku === skuToUse);
+      const created = (updated.data as Product[]).find(
+        (p: Product) => p.gtin === payload.gtin || p.name === payload.name || p.sku === skuToUse
+      );
       if (created) {
         setCategoryMap((prev) => {
-          const next = { ...prev, [created.id]: chosenCategory, [created.gtin]: chosenCategory };
+          const next = { ...prev, [created.id]: chosenCategory, [created.gtin]: chosenCategory, ...(created.sku ? { [created.sku]: chosenCategory } : {}) };
           localStorage.setItem(CATEGORY_STORE_KEY, JSON.stringify(next));
           return next;
         });
       }
       notifySW();
     } catch (err) {
-      // ignore
+      // keep optimistic item; no-op
     }
   };
 

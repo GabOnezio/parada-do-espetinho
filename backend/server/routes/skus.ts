@@ -139,42 +139,146 @@ router.put('/', requireAuth, requireAdmin, async (req, res) => {
   return res.json({ message: 'Arquivo atualizado' });
 });
 
+// Update single SKU entry (e.g., update GTIN or other fields)
+router.put('/entry', requireAuth, requireAdmin, async (req, res) => {
+  const { sku, gtin, name, brand, price, tax, measureUnit } = req.body as any;
+  if (!sku) return res.status(400).json({ message: 'sku obrigatório' });
+  await ensureDataFile();
+  const raw = await fs.readFile(HISTORY_FILE, 'utf-8');
+  const lines = raw.split('\n');
+  const header = lines[0] || 'sku;gtin;name;brand;price;tax;measureUnit';
+  const dataLines = lines.slice(1);
+
+  let found = false;
+  for (let i = 0; i < dataLines.length; i++) {
+    if (!dataLines[i] || dataLines[i].trim() === '') continue;
+    const parts = dataLines[i].split(';');
+    if (parts[0] === sku) {
+      // update only provided fields
+      if (gtin !== undefined) parts[1] = gtin;
+      if (name !== undefined) parts[2] = name;
+      if (brand !== undefined) parts[3] = brand;
+      if (price !== undefined) parts[4] = price;
+      if (tax !== undefined) parts[5] = tax;
+      if (measureUnit !== undefined) parts[6] = measureUnit;
+      dataLines[i] = parts.join(';');
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) return res.status(404).json({ message: 'SKU não encontrado' });
+
+  const out = [header, ...dataLines.filter((l) => l !== undefined)].join('\n') + '\n';
+  await fs.writeFile(HISTORY_FILE, out, 'utf-8');
+  return res.json({ message: 'Entry updated' });
+});
+
 router.post('/batch/from-db', requireAuth, requireAdmin, async (_req, res) => {
   try {
     const products = await prisma.product.findMany({ where: { isActive: true } });
 
-    const slugify = (text: string) =>
-      text
+    // Tabelas de mapeamento
+    const brandMap: Record<string, string> = {
+      'doritos': 'DOR',
+      'brahma': 'BRA',
+      'coca cola': 'COC',
+      'parada do espetinho': 'PDE',
+    };
+    const flavorMap: Record<string, string> = {
+      'limão': 'LIM',
+      'elma': 'ELM',
+      'frango': 'FRG',
+      'carne': 'CRN',
+      'linguiça': 'LIN',
+    };
+    const typeMap: Record<string, string> = {
+      'chips': 'CHP',
+      'espetinho': 'ESP',
+      'refrigerante': 'REF',
+      'cerveja': 'CERV',
+    };
+
+    function normalize(text: string) {
+      return text
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
+        .replace(/[^a-z0-9 ]/g, '')
+        .trim();
+    }
 
-    const generateSkuFrom = (p: any) => {
-      const w = p.weight ? String(p.weight).replace(/\D/g, '') : '0';
-      return `${slugify(p.name)}-${slugify(p.brand)}-${w}${p.measureUnit || 'un'}`;
-    };
+    function extractFlavor(name: string) {
+      for (const key of Object.keys(flavorMap)) {
+        if (normalize(name).includes(key)) return flavorMap[key];
+      }
+      return '';
+    }
+    function extractType(name: string) {
+      for (const key of Object.keys(typeMap)) {
+        if (normalize(name).includes(key)) return typeMap[key];
+      }
+      return '';
+    }
+
+    function generateSkuFrom(p: any) {
+      const brandCode = brandMap[normalize(p.brand)] || p.brand.slice(0,3).toUpperCase();
+      const flavorCode = extractFlavor(p.name);
+      const typeCode = extractType(p.name);
+      // Peso para gramas
+      let peso = Number(p.weight);
+      let unidade = normalize(p.measureUnit);
+      if (unidade === 'kg') peso = peso * 1000;
+      if (unidade === 'g') peso = peso;
+      if (unidade === 'ml') peso = peso; // para líquidos, manter ml
+      const pesoStr = String(Math.round(peso));
+      let unidadeCode = unidade === 'kg' || unidade === 'g' ? 'G' : unidade.toUpperCase();
+      // SKU final
+      return `${brandCode}${flavorCode}${typeCode}${pesoStr}${unidadeCode}`;
+    }
 
     await ensureDataFile();
     const raw = await fs.readFile(HISTORY_FILE, 'utf-8');
-    const lines = raw.split('\n').filter((l) => l.trim());
-    const existingSkus = new Set(lines.slice(1).map((l) => l.split(';')[0]));
+    const lines = raw.split('\n');
+    // preserve header (line 0)
+    const header = lines[0] || 'sku;gtin;name;brand;price;tax;measureUnit';
+    const dataLines = lines.slice(1).filter((l) => l.trim());
 
-    const newLines: string[] = [];
+    // map SKU -> index in dataLines
+    const skuIndexMap = new Map<string, number>();
+    for (let i = 0; i < dataLines.length; i++) {
+      const parts = dataLines[i].split(';');
+      const s = parts[0] || '';
+      if (s) skuIndexMap.set(s, i);
+    }
+
+    let generated = 0;
+    let updated = 0;
     for (const p of products) {
       const sku = generateSkuFrom(p);
-      if (!existingSkus.has(sku)) {
-        newLines.push(`${sku};${p.gtin || ''};${p.name};${p.brand};${p.price ?? ''};${p.cost ?? ''};${p.measureUnit || ''}\n`);
-        existingSkus.add(sku);
+      const existingIdx = skuIndexMap.get(sku);
+      if (existingIdx === undefined) {
+        // append new
+        dataLines.push(`${sku};${p.gtin || ''};${p.name};${p.brand};${p.price ?? ''};${p.cost ?? ''};${p.measureUnit || ''}`);
+        skuIndexMap.set(sku, dataLines.length - 1);
+        generated++;
+      } else {
+        // update missing GTIN if present in product
+        const parts = dataLines[existingIdx].split(';');
+        const currentGtin = (parts[1] || '').trim();
+        if ((!currentGtin || currentGtin === '') && p.gtin) {
+          parts[1] = p.gtin;
+          dataLines[existingIdx] = parts.join(';');
+          updated++;
+        }
       }
     }
 
-    if (newLines.length > 0) {
-      await fs.appendFile(HISTORY_FILE, newLines.join(''), 'utf-8');
-    }
+    // write back file with header + dataLines
+    const out = [header, ...dataLines].join('\n') + '\n';
+    await fs.writeFile(HISTORY_FILE, out, 'utf-8');
 
-    return res.json({ total: products.length, generated: newLines.length, message: `${products.length} produtos processados, ${newLines.length} SKUs gerados` });
+    return res.json({ total: products.length, generated, updated, message: `${products.length} produtos processados, ${generated} SKUs gerados, ${updated} registros atualizados` });
   } catch (error) {
     console.error('[SKU] Error generating from DB:', error);
     return res.status(500).json({ message: 'Erro ao gerar SKUs do banco' });
