@@ -90,7 +90,7 @@ const ProductsPage = () => {
     brand: '',
     gtin: '',
     sku: '',
-    generateSku: false,
+    generateSku: true,
     price: 0,
     cost: 0,
     weight: 0,
