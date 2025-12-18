@@ -67,6 +67,7 @@ SOFGM0G;7896292343702;Grão de Milho;SOFRUTA;4.99;;kg
 QUEGM0G;7896102500608;Grão de Milho;Quero;5.49;;kg
 BONGM0G;7899659900785;Grão de Milho;Bonare;4.99;;kg
 MANCM0G;7896722506578;Chá Mate;Mandiervas;5.99;;kg
+MANCC0G;7896722501016;Chá de Camomila;Mandiervas;5.99;;kg
 APTFBC0G;7896327511984;Farinha de Bolo Chocolate;Apti;6.99;;kg
 APTB0G;7896327511335;Baunilha;Apti;6.99;;kg
 COAOS0G;7896279600538;Óleo de Soja;COAMO;9.98;;kg
@@ -85,23 +86,35 @@ SUDFTE0G;7896021800209;Farinha de Trigo Enriquecida;Sudoeste;5.99;;kg
 FARFT0G;7891080007705;Farinha de Trigo;Farina;5.99;;kg
 CARAR0G;7896894900013;Açucar refinado;Caravelas;5.99;;kg
 ELMD0G;7892840822347;Doritos;Elma Chips;15;;kg
+NESAEP200G;7896004010649;Achocolatado em Pó Original;Nescau;2.99;;g
 JUSLCI395G;7896722506578;Leite Condensado Integral;Jussara;5.99;;g
+JUSCLU200G;7896722506592;Creme de Leite UHT;Jussara;5.99;;g
 FLEMPB450G;7896004401775;Mistura P/ Bolo Laranja;Fleischmann;2.98;;g
+MOCCLM200G;7891030300306;Creme de Leite Mistura Láctea;Mococa;3.6;;g
+TERCLU200G;7898915414899;Creme de Leite UHT;Terra Viva;4.49;;g
 MOCLCM395G;7891030300207;Leite Condensado Mistura Láctea;Mococa;5.99;;g
 BONMVE170G;7899659900785;Milho Verde em Conserva Lata;Bonare;4.99;;g
 QUEMVE170G;7896102500608;Milho Verde em Conserva Lata;Quero;4.99;;g
 TIRQMF150G;7896348200874;Queijo Mussarela Fatiado;Tirolez;11.99;;g
 POLQMF200G;7896332722825;Queijo Minas Frescal;Polenghi;5.99;;g
 QUAMCS200G;7898623463233;Manteiga c/ Sal Pote;Qualy;4.99;;g
+PESSCO83G;7896114901738;Sardinha c/ Óleo Lata;Pescador;7.98;;g
 PESSMT83G;7896114900045;Sardinha Molho Tomate Lata;Pescador;7.98;;g
 HELMPR500G;7894000050034;Maionese Pote Regular;Hellmann's;11.99;;g
+QUEMP495G;7896102584998;Maionese Pote;Quero;8.99;;g
 CASMP500G;7896048285904;Maionese Pote;Castelo;7.99;;g
 3COCTE250G;630941717455;Café Torrado e Moído;3 Corações;2.49;;g
 FUGMT340G;7897517206086;Molho de Tomate Tradicional Sachê;Fugini;2.99;;g
 TOMMT300G;7899659901331;Molho de Tomate Pouck;Tomadoro;2.99;;g
+PREMT300G;7896292333000;Molho de Tomate Tradicional Refil;Predilecta;2.99;;g
 KICFCT1000G;7898102710032;Feijão Carioca Tipo 1;Kicaldo;2.99;;kg
+KICFPT1000G;7898102710193;Feijão Preto Tipo 1;Kicaldo;4.98;;kg
 CARARP1000G;7896894900013;Açúcar Refinado Pacote;Caravelas;5.99;;kg
+ALTARP1000G;7896508200034;Açúcar Refinado Pacote;Alto Alegre;5.99;;kg
 SUDFTT1000G;7896021800209;Farinha de Trigo Tipo 1 Pacote;Sudoeste;5.99;;kg
+BAUBRC140G;7896273908340;Biscoito Recheado Chocolate;Bauducco;4.99;;g
+BAUBRM140G;7896273903192;Biscoito Recheado Morango;Bauducco;4.99;;g
+BAUBRB140G;7896273908333;Biscoito Recheado Baunilha;Bauducco;4.99;;g
 VALGT300G;7898045700336;Goiabada Tablete;Val;5.99;;g
 PIRLUI1000L;7891104393104;Leite UHT Integral;Piracanjuba;7.99;;L
 VIGRCP200G;7896327512967;Requeijão Cremoso Pote;Vigor;4.99;;g
@@ -111,9 +124,29 @@ PREMP150ML;7896348300994;Molho de Pimenta;Predilecta;5.99;;ml
 TODAEP400G;7896005803714;Achocolatado em Pó;Toddy;4.99;;g
 VIGQC250G;7896327512363;Queijo Coalho;Vigor;12.99;;g
 LOWAL100ML;7898418144910;Adoçante Liquido;Lowçucar;4.99;;ml
+CAMVTS750ML;7896019112376;Vinho Tinto Suave;Campo Largo;31.9;;ml
+REDBE250ML;7807900005370;Bebida Energética;Red Bull;6.99;;ml
+SKOCERV350ML;7896523158433;Cerveja Pilsen Lata;Skol;8.99;;ml
 PASWE750ML;7898929930033;Whisky Escocês;Passport;19.98;;ml
+CAMVBS750ML;7896019112352;Vinho Branco Suave;Campo Largo;29.99;;ml
+GUARSL2000L;7898406230335;Refrig. Sabor Laranja;Guaraná Jesus;6.99;;L
 TIOAPT1000G;7896003739428;Arroz Parbolizado Tipo 1;Tio João;5.98;;kg
+GUALIMRSL2000L;7898406230311;Refrig. Sabor Limão;Guaraná Jesus;6.99;;L
+BRACERV350ML;7898926842407;Cerveja Malzbier;Brahma;6.99;;ml
+MELCST50G;7897213319677;Café Solúvel Tradicional;Melitta;6.99;;g
+MELCSE50G;7897213319752;Café Solúvel Extra Forte;Melitta;6.99;;g
+MELCSC50G;7897213320314;Café Solúvel Cappuccino;Melitta;6.99;;g
+GUARSG2000L;7898406230151;Refrig. Sabor Guaraná;Guaraná Jesus;6.99;;L
+OVOAI300G;35354277;Achocolatado Instantâneo;Ovomaltine;6.99;;g
+MINAMG1500L;7897426030765;Água Mineral Sem Gás;Minalba;6.99;;L
+AMSCERV355ML;7898926843350;Cerveja Pilsen Long Neck;Amstel;6.99;;ml
+MINAMG1500L-2;7897426030772;Água Mineral Com Gás;Minalba;6.99;;L
 NESLCI395G;7892300004788;Leite Condensado Integral Lata;Nestlé Moça;4.99;;g
+BAUBSC200G;7896273900108;Biscoito Salgado Cream Cracker;Bauducco;5.98;;g
+PIRBDM200G;7896363400068;Biscoito Doce Maisena;Piraquê;6.99;;g
+BAUBSA200G;7896273900122;Biscoito Salgado Água e Sal;Bauducco;5.99;;g
+PULPFT500G;7896271004792;Pão de Forma Tradicional;Pullman;4.99;;g
+PIRBRC130G;7896363400044;Biscoito Recheado Chocolate;Piraquê;5.99;;g
 BAUPMC240G;7896273905301;Pão de Mel Coberto Chocolate;Bauducco;7.99;;g
 ITADLP400G;7896460400138;Doce de Leite Pastoso;Itambé;4.99;;g
 YOKMPP500G;7896022205775;Mistura P/ Pão de Queijo;Yoki;5.99;;g
@@ -121,21 +154,196 @@ FUGMT340G-2;7897517206086;Molho de Tomate Tradicional Sachê;Fugini;2.99;;g
 NESFLT200G;7896232115680;Farinha Láctea Tradicional;Nestlé;5.99;;g
 NESAEP400G;7896232111170;Achocolatado em Pó;Nestlé;5.99;;g
 YOKFM500G;7896022205737;Flocão de Milho;Yoki;5.99;;g
+YOKTG500G;7896022002015;Tapioca Granulada;Yoki;6.99;;g
+YOKAM200G;7896022203566;Amido de Milho;Yoki;6.99;;g
 PILCEP500G;7896267000128;Café em Pó Extra Forte;Pilão;6.99;;g
 DROCC10G;7897154800074;Chá de Camomila;Dr. Oetker;11.99;;g
 VITBIA200G;7898994503422;Biscoito Integral Aveia e Mel;Vitao;9.98;;g
+BORAOE500ML;7896220548292;Azeite de Oliva Extravirgem;Borges;13.99;;ml
+VITBCB60G;7898994322184;Barrinha de Cereal Banana;Vitao;5.99;;g
 KINMPI500G;7898112977029;Mistura para Pão Integral;King Mix;9.98;;g
 SAZTCP300G;7897060600010;Tempero Completo com Pimenta;Sazón;9.98;;g
 KITTPA60G;7898134720023;Tempero P/ Arroz;Kitano;7.99;;g
 SAZTCP300G-2;7897060600027;Tempero Completo Sem Pimenta;Sazón;7.99;;g
+FLEFBF15G;7898915343038;Fermento Biológico Fresco;Fleischmann;5.99;;g
 NISMIG80G;7898096590085;Macarrão Instantâneo Galinha Caipira;Nissin;6.99;;g
+MAGSLC500ML;7896597601224;Suco de Laranja Concentrado;Maguary;6.99;;ml
 OMOSEP800G;7896383300096;Sabão em Pó Lavagem Perfeita;Omo;3.99;;g
 YPELIMDLL500ML;7896297910688;Detergente Líquido Limão;Ypê;3.99;;ml
 FORPQC400G;7896407500013;Pão de Queijo Congelado;Forno de Minas;3.99;;g
 FORPBC400G;7896407500112;Pão de Batata Congelado;Forno de Minas;2.99;;g
+IGUCSV100G;7898247780297;Café Solúvel Vidro;Iguaçu;9.98;;g
+CAMAAT1000G;7891000241356;Arroz Agulhinha Tipo 1;Camil;4.99;;kg
 YOKFMF500G;7896022085216;Farinha de Milho Flocada;Yoki;4.99;;g
 YOKFMT500G;7896022085209;Farinha de Mandioca Torrada;Yoki;4.5;;g
+ELELUI1000L;7896111427132;Leite UHT Integral;Elegê;3.5;;L
+ELELUS1000L;7896111427149;Leite UHT Semidesnatado;Elegê;3.5;;L
+NESLCT395G;7896004010656;Leite Condensado TP;Nescau;2.99;;g
+NESCLT200G;7896004010687;Creme de Leite TP;Nescau;2.99;;g
+NESDLT200G;7896004011295;Doce de Leite TP;Nescau;2.99;;g
+DORPCC50G;7896665200977;Palito de Coco c/ Chocolate;Dori;1.99;;g
+DORAJ50G;7896665200953;Amendoim Japonês;Dori;1.99;;g
+GARCEB90G;835281003637;Chocolate em Barra Ao Leite;Garoto;2.99;;g
+TOSBWC100G;7891340365767;Biscoito Wafer Chocolate;Tostines;2.99;;g
+GARCEB90G-2;835281003644;Chocolate em Barra Meio Amargo;Garoto;2.99;;g
+TOSLIMBWL100G;7891340365682;Biscoito Wafer Limão;Tostines;2.99;;g
+PELCTE250G;7891203057075;Café Torrado e Moído Tradicional;Pelé;3.5;;g
+PELCTE250G-2;7891203058591;Café Torrado e Moído Extra Forte;Pelé;3.5;;g
+GUARZG350ML;7898406230823;Refrig. Zero Guaraná;Guaraná Jesus;1.99;;ml
+MINAMG500ML;7897426030673;Água Mineral Sem Gás;Minalba;1.99;;ml
+MINAMG350ML;7897426030642;Água Mineral Com Gás Lata;Minalba;1.99;;ml
+MINATL350ML;7897426030697;Água Tônica Lata;Minalba;1.99;;ml
+MINAMG500ML-2;7897426030673;Água Mineral Sem Gás;Minalba;1.99;;ml
+MINREF350ML;7897426030666;Refrigerante Cola Lata;Minalba;1.99;;ml
+HEICERV350ML;7898926843275;Cerveja Lager Lata;Heineken;1.99;;ml
+TRIGMH8G;7897190305847;Goma de Mascar Hortelã;Trident;1.25;;g
+TRIGMM8G;7897190305861;Goma de Mascar Morango;Trident;1.25;;g
+TRIGMM8G-2;7897190305854;Goma de Mascar Menta;Trident;1.25;;g
+TRIGMT8G;7897190305908;Goma de Mascar Tutti-Frutti;Trident;1.25;;g
+TRIGMM8G-3;7897190305885;Goma de Mascar Melancia;Trident;1.25;;g
+TRIGMC8G;7897190305939;Goma de Mascar Canela;Trident;1.25;;g
+TRILIMGML8G;7897190305830;Goma de Mascar Limão;Trident;1.25;;g
+TRIGMB8G;7897190305892;Goma de Mascar Blueberry;Trident;1.25;;g
+TRIGMC8G-2;7897190305915;Goma de Mascar Cereja;Trident;1.25;;g
+PARBSQ100G;7898966141041;Biscoito Salgado Queijo;Parati;1.99;;g
+NESCEC10G;7898699690304;Café em Cápsula Expresso;Nescafé Dolce Gusto;4.99;;g
+APTAZA200G;7898937745230;Achocolatado Zero Açúcar;Apti;4.99;;g
+APTAEP200G;7898937745605;Achocolatado em Pó Premium;Apti;4.99;;g
+APTCCP200G;7898937745124;Cappuccino Clássico Pó;Apti;4.99;;g
+PETCERV600ML;7892840822316;Cerveja Premium Puro Malte;Petra;14;;ml
+PETCERV355ML;7892840822514;Cerveja Lager Long Neck;Petra;15;;ml
+APTBMZ170G;7898937745209;Biscoito Maizena Zero Açúcar;Apti;4.99;;g
+APTBRC120G;7898937745681;Biscoito Recheado Chocolate Zero;Apti;4.99;;g
+ITABLC1000L;7899970402814;Bebida Láctea Chocolate;Italac;7.99;;L
+ITALUI1000L;7899970400674;Leite UHT Integral TP;Italac;6.99;;L
+UNIAES50G;7898142866232;Adoçante em Sachê;União;1.99;;g
+KISBPT50G;7898968728073;Batata Palha Tradicional;Kisabor;1.5;;g
+QUICERV355ML;77940131;Cerveja Lager Lata;Quilmes;1.99;;ml
 RENFTT1000G;7896706300420;Farinha de Trigo Tipo 1;Renata;2.99;;kg
 RENFTI1000G;7896706300390;Farinha de Trigo Integral;Renata;2.99;;kg
 RENFTP1000G;7896706300376;Farinha de Trigo P/ Pastéis;Renata;2.99;;kg
+TRIBSC200G;78939301;Biscoito Salgado Cream Cracker;Triunfo;1.99;;g
+MILCEB100G;7622210575999;Chocolate em Barra Oreo;Milka;7.99;;g
+MILCEB100G-2;7622210575975;Chocolate em Barra Ao Leite;Milka;7.99;;g
+VIGINI170G;7896327512233;Iogurte Natural Integral;Vigor;1.99;;g
+SEVPFI400G;7898937630055;Pão de Forma Integral;Seven Boys;2.5;;g
+ANTREF2000L;7896058506099;Refrigerante Guaraná;Antarctica;2.5;;L
+INDAMG500ML;7893642462090;Água Mineral Sem Gás Garrafa;Indaiá;1;;ml
+CRYAMG500ML;7899958501607;Água Mineral Com Gás Garrafa;Crystal;1;;ml
+CRYAMG500ML-2;7899958501591;Água Mineral Sem Gás Garrafa;Crystal;1;;ml
+NINBLC200ML;7898591457869;Bebida Láctea Chocolate UHT;Ninho;1.99;;ml
+NINLUI1000L;7898591455629;Leite UHT Integral TP;Ninho;1.99;;L
+BRACERV350ML-2;7896058595468;Cerveja Pilsen Lata;Brahma;2.99;;ml
+BRACERV350ML-3;7896058595420;Cerveja Malzbier Lata;Brahma;2.99;;ml
+FANREF2000L;78938816;Refrigerante Laranja;Fanta;2.5;;L
+FANLIMREF2000L;78938823;Refrigerante Limão;Fanta;2.5;;L
+SABBSQ150G;7908635100528;Biscoito Salgado Queijo;Sabor da Terra;4.99;;g
+NESAEP350G;7891000412855;Acholatado em Pó;Nescau;11.99;0;g
+YPEDLL500ML;7896098900277;Detergente de Lava Louça Clear Care;Ypê;2.99;0;ml
+0ITABA0L;7897436007986;Álcool de Bicabornato Ação Bloqueadora0;0Italy;11.99;0;l
+FLOAEG500G;7898288820143;Álcool em Geral;Flop's;9.99;0;g
+LIMABL1000L;7898418146112;Alcool + Bicabornato Limpador de Uso Doméstico;LIMPS;11.99;0;l
+BOMPA1UN;7898921466288;Papel Aluminio;Bompack;5.99;0;un
+COPCDR180ML;7896030892646;Copinhos Descartaveis Reciclaveis;COPOBRAS;9.98;0;ml
+DPEFMB1000G;7897060600034;Fuba de Milho Branco Enriquecido com Ferro;D. Pedro;9.98;0;kg
+T2WGFC220G;7898919885503;Gel Fixador de Cabelo Brilho Molhado;T2W;10.99;0;g
+SBPMIT229G;7891035002663;Multi Inseticida Tripla Proteção;SBP;14.99;0;g
+BOMPM1UN;7898921466363;Papel Manteiga;Bompack;5.99;0;un
+MILFD24UN;7896104994320;Fralda Descartaveis ;Mili BaBy;2.99;0;un
+PANFDC2UN;7896448803012;Flaldas Descartaveis Confort Antivasamento;Panther Baby;24.99;0;un
+PANFDC13000G;7896448803029;Flaldas Descataveis Confort Com barreiras Antivazamento;Panther Baby;24.99;0;kg
+PANFD22UN;7896448803005;Flaldas Descartaveis;Panther Baby;24.99;0;un
+SUPDE2000L;7896524705254;Desinfetante de Eucalipto ;Suprema;7.99;0;l
+NOVDUG5000L;7898948953297;Desinfetante de Uso Geral;Novo Lar;14.99;0;l
+NOVDUG5000L-2;7898948953303;Desinfetante de Uso Geral Talco;Novo Lar;14.99;0;l
+CLEDUG2000L;7897938902949;Desinfetante para Uso geral;CLEAN PLus;7.99;0;l
+URCDFL2000L;7896056405684;Desinfetante Flor de Lavanda Pinho;URCA;7.99;0;l
+URCDLP2000L;7896056401549;Desinfetante Lavanda Pinho;URCA;7.99;0;l
+URCDFB2000L;7896056402485;Desinfetante Floral Brisa;URCA;7.99;0;l
+URCDMT2000L;7896056401044;Desinfetante de Menta Tradicional Pinho;URCA;7.99;0;l
+URCDMT2000L-2;7896056402478;Desinfetante de Menta Tradicional Pinho;URCA;7.99;0;l
+URCSEP1000G;7896056406513;Sabão em Pó Lava Roupas de Coco;URCA;9.98;0;kg
+URCSEP1600G;7896056406827;Sabão em Pó Detergente de Uso Geral;URCA;11.99;0;kg
+GIRCLI750ML;7896404600532;Cera Liqueda Incolor Para Pisos;Girando Sol;8.99;0;ml
+RUBCLC750ML;7896017423603;Cera Liqueda Cera de Alto Brilho Vermelha;RUBI;7.99;0;ml
+PIRRES10UN;7896582100015;Repelente em Spiral;Pirisa;5.99;0;un
+ESPEBA1UN;7898909772264;Esponja de Banho Adulto para  Banho;ESPONFLORA;1.99;0;un
+SKAKSS2UN;7897042013838;Kit de shampoo sem sal Vegano e condicionador Banana e Bacuri ;SKALA;24.9;0;un
+SKAKSE2UN;7897042013760;Kit de shampoo em sal Vegano e condicionador Camelia do Campo;SKALA;24.9;0;un
+AVALLB1UN;7899452032119;Lampda de Led Branca Integrado;AVANT;9.98;0;un
+PREPRV12UN;7898722500006;Prendedores de Roupas de Varal;Prende Mais;4.98;0;un
+SUAPSS35G;7896366204038;Pedra Sanitaria Suave Perfumada;Suave Lar;2.99;0;g
+DESPSO35G;7896224300025;Pedra Sanitaria Odorizante;Desolar Floral Flores;2.49;0;g
+LUSPAL60G;7891022850031;Palha de Aço de Limpeza de Panela Esponja de Aço;Lustro;3.99;0;g
+BOMPAL45G;7891022868036;Palha de Aço de Limpeza Eco;BOMBRIL;4.99;0;g
+ALPSEB5UN;7896274823857;Sabão em Barra Lavanda Glicerinado;Alpes;14.99;0;un
+ANJTUH120UN;7898172343222;Toalhas Umidecidas  Hipoalergêcas;Anjinho;14.99;0;un
+BARSEB5UN;7896724823864;Sabão em barra Lavanda Glicerinado;Barra Nova;12.98;0;un
+ALPSEB800G;7896274803996;Sabão em barra lavanda Glicerinado;Alpes;13.99;0;g
+TINELP4UN;7891040198726;Esponja de Limpeza Pesada;Tinindo;5.99;0;un
+COTCLO75UN;7898095296063;Contonete de Limpeza de Ouvido Antigerme;COTTON Lime;4.99;0;un
+SOLGP50UN;7898383300090;Guardanapos de papel;SOL;2.99;0;un
+ESFEC0G;7896001004504;Esponja de Cozinha;EsfreBom;2.99;0;kg
+BRIEM1UN;7896001004511;Esponja Multiuso;Brillus;0;0;un
+ESPEM3UN;7908099201366;Esponja Multiuso;ESPOFLORA;3.99;0;un
+PARVC6UN;7897818100021;Velas de Cera;PARTIKA;5.99;0;un
+IGUVC6UN;7896017414304;Velas de Cera ;Iguaçu;5.99;0;un
+ROYSPE50UN;7898021428681;Sacos Plasticos Embalagem Multiuso;RoyalPack;5.99;0;un
+MILAFN8UN;7896104993897;Absorvente Feminino Noturno com abas;Mili;7.99;0;un
+SYMATF8UN;7896110002248;Absorvente Tolhas Femininas Rosa;Sym;6.99;0;un
+SYMATF0G;7896110003863;Absorvente Toalhas Femininas;Sym;0;0;kg
+YPESLE180G;7896098905913;Sabão de Lavanda em Barra Neutro;Ype;4.99;0;g
+NETSLG200G;7898043365179;Sabão de Lavanda Glicerinado Barra;Netz;3.99;0;g
+TRISCL200G;7896527700829;Sabão de Coco de Lavanda;TRIEX;3.99;0;g
+XTRGGC230G;7897273760167; GELCOLA Gel de Cabelo EXTREME;XTREME;14.98;0;g
+SPCTDP100G;7896049540019;Talco Desodorante para Pes Tênis pé SPC;SPC;11.49;0;g
+CLOPDM70G;7891150049871;Pasta de Dente Menta Americana com Calcio;CLOSEUP;4.99;0;g
+CLOPDM70G-2;7891150049895;Pasta de Dente Menta com Calcio;CLOSEUP;0;0;g
+DOVSHB90G;7898422746759;Sabonte Hidratante Banho de Creme;Dove;4.99;0;g
+FONSHB85G;7896012104934;Sabonete Hidratante Banho Nature;Fontona Soft;1.99;0;g
+CLISHB85G;630941057858;Sabonete Hidratante Banho Lavanda;CLISS;1.99;0;g
+MOTSHB90G;7898908026054;Sabonete Hidratante Banho Doçura;Motivus;0;0;g
+SIESHB85G;7898086585947;Sabonte Hisdratante de Banho Erva Doce;Sie Ne;1.99;0;g
+SIESHB85G-2;7898086585930;Sabonte Hidrantante Banho Rosas Vermelhas;Sie Ne;1.99;0;g
+REXSHA84G;7891150066908;Sabonete Hidratante Antibacterial com Esfoliante;Rexona;4.2;0;g
+123SHB80G;7896012140048;Sabonete Hidratante banho Sabonte Cremoso;123 Baby;5.39;0;g
+ALBSHP85G;7908324403992;Sabonete Hidratante Perfumes da Natureza Rosa Aveludada;ALBANY;3.99;0;g
+MARSHB85G;7896394800196;Sabonete Hidratante de Banho Rosas Suave;MARAN;1.99;0;g
+MARSHB85G-2;7896394800189;Sabonete Hisdratante de Banho Amêndoas;MARAN;1.99;0;g
+ALBSHB85G;7908324404005;Sabonete Hidratante de Banho Perfumes da Natureza;ALBANY;3.99;0;g
+ALBSHN85G;7897664171725;Sabonete Hidratante Nutritivo Oleo de Macadâmia;ALBANY;3.99;0;g
+NIPSBH85G;7896978200046;Sabonete de Banho Hidratante Frutas Citricas;Nips;2.49;0;g
+NIPSBH85G-2;7896978200039;Sabonote de Banho Hidratantes Frutas Vermelhas;Nips;2.49;0;g
+NIPSMV85G;7896978200053;Sabonete Mate Verde Hidratante;Nips;2.49;0;g
+QBOASC1000L;7896083800018;Agua Sanitaria Cloro Ativo;Qboa;4.99;0;l
+BABARA2000L;7896075990727;Amacinate de Roupas Azul;Baby Soft GTEX;8.99;0;l
+BABARD2000L;7896075910466;Amaciante de roupas Dark Blue;Baby Soft GTEX;8.99;0;l
+BABARB2000L;7896075910022;Amaciante de Roupas Baby Soft Leitado;Baby Soft GTEX;8.99;0;l
+OMOSEP800G-2;7891150064317;Sabão em Pó Lava Roupas;OMO;16.99;0;g
+KLISEP1000G;7896241900017;Sabão em Pó Lava roupas ;Klip;8.99;0;kg
+COQSEP1000G;7896040707473;Sabão em Pó Lava Roupas Veganos;COQUEL;14.99;0;kg
+BLULRE1000G;7896241900109;Lava Roupa em Pó;Blue Forca Azul UP;12.99;0;kg
+TERLUI1000L;7898915414011;Leite UHT Integral Terra Viva;Terra Viva;5.99;0;l
+KAPPOA1UN;7898953017557;Phone de Ouvido a Cabo Stereo KA-6119;KAPBOM;29.99;0;un
+I7MPOB1UN;4898653011421;Phone de ouvido Bluethoot i7-Mini 5.0;i7-Mini;74.99;0;un
+MUSPOA1UN;7898953017649;Phone de Ouvido a cabo Headset Stereo;MUSICEARPHONE;14.99;0;un
+KAPCTC1UN;7898953017496;Carregador tipo C de Celular KAPBOM;KAPBOM;29.99;0;un
+FIACFF1900UN;7896007912124;Caixa de Fosforo FIAT LUX Pinheiro; FIAT LUX;3.99;0;un
+THRSB11UN;7896020470427;Super Bonde 1000 Three Bond;Three Bond;5.99;0;un
+FANBEE5000G;7899776000054;Bonbinhas de Estalar Estalos de Salão;FANTASMANIA;3.99;0;kg
+FLOPFF136UN;7896349400013;Palha de Fumo Flor do Norte;Flor do Norte;7;0;un
+COPCBC50000G;7896008910112;Cartas de Baralho COPAG 139;COPAG;19.99;0;kg
+ROTCRO10G;78944237;Cigarro Rothmans Of London;Rothmans ;10;0;g
+CLACCC10G;78946606;Cigarro Classic Congo;Classic ;7;0;g
+OUTCO10G;78937529;Cigarro OutBack;OutBack;0;0;g
+FIRCLM10G;78942646;Cigarro L&M First Cut;First Cut;9.5;0;g
+VILCVR10G;78947931;Cigarro Vila Rica;Vila Rica;6;0;g
+OSCCC0G;78947900;Cigarro Classic;OSCAR;7;0;kg
+GIFCG10G;78942462;Cigarro GIFT;GIFT;10;0;g
+CHECCT10G;78947214;Cigarro Chestfied Terras Brasieliras;Chestfied ;9.5;0;g
+HEICH010G;78947306;Cigarro Height 0800;Height ;8;0;g
+DUNCD10G;78947467;Cigarro Dunhill;Dunhill;15;0;g
+EIGCE10000G;78947245;Cigarro Eight; Eight;7;0;kg
+PANCP10G;78946866;Cigarro Pandhora;Pandhora;6;0;g
+CHECC10000G;78942660;Cigarro Chestfield;Chestfield;14.5;0;kg
 ISATBC130G;;Toons Bolacha de Chocolate;Isabela;4.5;0;g

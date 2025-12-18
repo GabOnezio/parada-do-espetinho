@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   QrCode,
   HandCoins,
@@ -64,6 +65,7 @@ type Product = {
 };
 type CartItem = { product: Product; quantity: number };
 type PixKey = { id: string; type: string; key: string; isDefault: boolean };
+type FiadoEntry = { id: string; name: string; cpf: string; amount: number; createdAt: number };
 
 // Constrói o texto do recibo em formato ASCII (monoespaçado)
 function buildReceiptText(receipt: { items: CartItem[]; total: number; paymentType: string }) {
@@ -99,8 +101,15 @@ function buildReceiptText(receipt: { items: CartItem[]; total: number; paymentTy
   return lines.join('\n');
 }
 
+const ModalPortal = ({ children }: { children: React.ReactNode }) => {
+  if (typeof document === 'undefined') return null;
+  return createPortal(children, document.body);
+};
+
 const PRODUCTS_CACHE_KEY = 'pdv-products-cache'; // mantém compat localStorage
 const SALES_STATS_KEY = 'pdv-sales-stats';
+const FIADO_CLIENTS_KEY = 'pdv-fiado-clients';
+const FIADO_HISTORY_KEY = 'pdv-fiado-history';
 
 const CATEGORY_STORE_KEY = 'productCategories';
 
@@ -212,22 +221,28 @@ const SalesPage = () => {
   const [coupon, setCoupon] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
   const [paymentType, setPaymentType] = useState('PIX');
+  const [saleSubmitting, setSaleSubmitting] = useState(false);
+  const saleSubmittingRef = useRef(false);
   const [pixKeys, setPixKeys] = useState<PixKey[]>([]);
   const [selectedPixKey, setSelectedPixKey] = useState<string | null>(null);
+  const [pixMethod, setPixMethod] = useState<'KEY' | 'MP' | null>(null);
   const [message, setMessage] = useState('');
   const [pixPayload, setPixPayload] = useState('');
   const [pixQr, setPixQr] = useState('');
+  const [pixLoading, setPixLoading] = useState(false);
+  const [pixError, setPixError] = useState('');
   const [showPixModal, setShowPixModal] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
-  const [cashAmount, setCashAmount] = useState(0);
+  const [cashAmountInput, setCashAmountInput] = useState('');
   const [cashPayerName, setCashPayerName] = useState('');
   const [cashPayerCpf, setCashPayerCpf] = useState('');
+  const [cashChange, setCashChange] = useState<number | null>(null);
+  const [cashDebt, setCashDebt] = useState<number | null>(null);
+  const [cashFormError, setCashFormError] = useState('');
   const [showCardModal, setShowCardModal] = useState(false);
   const [cardBrand, setCardBrand] = useState('');
   const [cardAuthCode, setCardAuthCode] = useState('');
   const [cardValue, setCardValue] = useState(0);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [pendingCount, setPendingCount] = useState(0);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'paid'>('idle');
   const [lastReceipt, setLastReceipt] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
@@ -311,7 +326,6 @@ const SalesPage = () => {
       if (!navigator.onLine) return;
       try {
         const pending = await getPendingSales();
-        setPendingCount(pending.length);
         for (const sale of pending) {
           try {
             const saleRes = await api.post('/sales', {
@@ -325,16 +339,12 @@ const SalesPage = () => {
             // se falhar, tenta depois
           }
         }
-        const remaining = await getPendingSales();
-        setPendingCount(remaining.length);
       } catch {
         /* ignore */
       }
     };
     sync();
     window.addEventListener('online', sync);
-    window.addEventListener('offline', () => setIsOffline(true));
-    window.addEventListener('online', () => setIsOffline(false));
     return () => window.removeEventListener('online', sync);
   }, []);
 
@@ -343,9 +353,10 @@ const SalesPage = () => {
       try {
         const res = await api.get('/pix/keys');
         setPixKeys(res.data);
-        if (res.data.length) {
-          const def = res.data.find((k: PixKey) => k.isDefault) || res.data[0];
-          setSelectedPixKey(def.id);
+        const hasCurrent = selectedPixKey ? res.data.some((k: PixKey) => k.id === selectedPixKey) : false;
+        if (!hasCurrent) {
+          setSelectedPixKey(null);
+          setPixMethod((prev) => (prev === 'KEY' ? null : prev));
         }
       } catch (err) {
         // ignore
@@ -386,6 +397,36 @@ const SalesPage = () => {
     searchRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const renderQrFromPayload = async () => {
+      if (!showPixModal) return;
+      if (!pixPayload) return;
+      if (pixQr) return;
+      try {
+        setPixLoading(true);
+        setPixError('');
+        const mod = await import('qrcode');
+        const url = await mod.toDataURL(pixPayload, {
+          width: 256,
+          margin: 1,
+          errorCorrectionLevel: 'M'
+        });
+        if (!cancelled) setPixQr(url);
+      } catch (err) {
+        if (!cancelled) setPixError('Não foi possível renderizar o QR. Use o código PIX (copia e cola).');
+      } finally {
+        if (!cancelled) setPixLoading(false);
+      }
+    };
+
+    renderQrFromPayload();
+    return () => {
+      cancelled = true;
+    };
+  }, [showPixModal, pixPayload, pixQr]);
+
   const addToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.product.id === product.id);
@@ -418,41 +459,188 @@ const SalesPage = () => {
     }
   };
 
+  const parseCashAmount = (value: string) => {
+    const normalized = value.replace(/\./g, '').replace(',', '.');
+    const num = Number(normalized);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const saveFiado = (entry: { name: string; cpf: string; amount: number }) => {
+    const now = Date.now();
+    const next: FiadoEntry = { id: crypto.randomUUID(), createdAt: now, ...entry };
+
+    const read = (key: string): FiadoEntry[] => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    };
+
+    const current = read(FIADO_CLIENTS_KEY);
+    const cpfDigits = next.cpf.replace(/\D/g, '');
+    const existingIndex = current.findIndex((c) => (c.cpf || '').replace(/\D/g, '') === cpfDigits);
+    const merged =
+      existingIndex >= 0
+        ? current.map((c, idx) => (idx === existingIndex ? { ...c, name: next.name, amount: c.amount + next.amount } : c))
+        : [next, ...current];
+    localStorage.setItem(FIADO_CLIENTS_KEY, JSON.stringify(merged));
+
+    const history = read(FIADO_HISTORY_KEY);
+    localStorage.setItem(FIADO_HISTORY_KEY, JSON.stringify([next, ...history]));
+  };
+
+  const getPixTitle = () => {
+    if (pixMethod === 'MP') return 'Pagamento PIX';
+    const key = pixKeys.find((k) => k.id === selectedPixKey);
+    const type = key?.type?.toUpperCase();
+    const label =
+      type === 'CPF'
+        ? 'CPF'
+        : type === 'PHONE'
+        ? 'CELULAR'
+        : type === 'CNPJ'
+        ? 'CNPJ'
+        : type === 'ALEATORIA'
+        ? 'CHAVE ALEATÓRIA'
+        : type === 'EMAIL'
+        ? 'EMAIL'
+        : '';
+    return label ? `Pagamento PIX ${label}` : 'Pagamento PIX';
+  };
+
+  const getErrMsg = (err: unknown) => {
+    const anyErr = err as { response?: { data?: unknown }; message?: string };
+    const data = anyErr?.response?.data;
+    if (typeof data === 'string') return data;
+    if (data && typeof data === 'object') {
+      const rec = data as Record<string, unknown>;
+      const message = rec.message;
+      const error = rec.error;
+      if (typeof message === 'string') return message;
+      if (typeof error === 'string') return error;
+    }
+    return anyErr?.message || 'Erro ao gerar PIX';
+  };
+
   const finalize = async () => {
+    if (saleSubmittingRef.current) return;
     try {
-      setPixPayload('');
-      setPixQr('');
-      setShowPixModal(false);
+      if (paymentType === 'PIX') {
+        if (!pixMethod) {
+          setMessage('Selecione a forma de pagamento PIX para continuar.');
+          return;
+        }
+        if (pixMethod === 'KEY' && pixKeys.length > 0 && !selectedPixKey) {
+          setMessage('Selecione uma chave PIX para continuar.');
+          return;
+        }
+      }
       setShowCashModal(false);
       const cartSnapshot = [...cart];
       const totalSnapshot = total.total;
       const paymentSnapshot = paymentType;
       setPaymentStatus('idle');
       setLastReceipt(null);
-      if (paymentType === 'PIX') {
-        // Integração Mercado Pago: cria a venda, depois cria o pagamento PIX (API HTTP)
-        const saleRes = await api.post('/sales', {
-          items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
-          couponCode: appliedCoupon?.code,
-          paymentType
-        });
-        const mpRes = await api.post('/mp/pix', {
-          amount: total.total,
-          description: 'Venda PDV',
-          payer: undefined,
-          saleId: saleRes.data.id
-        });
-        setPendingTx(String(mpRes.data.id));
-        setPixPayload(mpRes.data.qr_code || '');
-        setPixQr(`data:image/png;base64,${mpRes.data.qr_base64}`);
-        setMessage('PIX gerado. Escaneie o QR Code para pagar.');
+      if (paymentType === 'PIX' && pixMethod) {
+        saleSubmittingRef.current = true;
+        setSaleSubmitting(true);
+        setPaymentStatus('idle');
+        setPendingTx(null);
+
         setShowPixModal(true);
-        setPendingPixSale({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
-        await recordLocalSale(cartSnapshot, paymentSnapshot, totalSnapshot);
+        setPixLoading(true);
+        setPixError('');
+        setPixPayload('');
+        setPixQr('');
+        setMessage('Gerando PIX...');
+
+        try {
+          const saleRes = await api.post('/sales', {
+            items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+            couponCode: appliedCoupon?.code,
+            paymentType
+          });
+
+          let nextPayload = '';
+          let nextQr = '';
+          let nextTx: string | null = null;
+
+          if (pixMethod === 'MP') {
+            const mpRes = await api.post('/mp/pix', {
+              amount: total.total,
+              description: 'Venda PDV',
+              payer: undefined,
+              saleId: saleRes.data.id
+            });
+
+            nextTx = String(mpRes.data?.id ?? mpRes.data?.paymentId ?? mpRes.data?.txid ?? '');
+
+            nextPayload =
+              mpRes.data?.qr_code || mpRes.data?.qrCodePayload || mpRes.data?.qrCode || '';
+
+            const base64 = mpRes.data?.qr_base64 || mpRes.data?.qrBase64 || mpRes.data?.qr_base64_png || '';
+
+            if (base64) {
+              nextQr = base64.startsWith('data:image') ? base64 : `data:image/png;base64,${base64}`;
+            }
+
+            setMessage('PIX gerado. Escaneie o QR Code para pagar.');
+          } else {
+            const chargeRes = await api.post('/pix/charges', {
+              amount: total.total,
+              description: 'Venda PDV',
+              saleId: saleRes.data.id,
+              pixKeyId: selectedPixKey || undefined
+            });
+
+            nextPayload =
+              chargeRes.data?.qrCodePayload ||
+              chargeRes.data?.qr_code_payload ||
+              chargeRes.data?.brcode ||
+              chargeRes.data?.payload ||
+              '';
+
+            const base64 = chargeRes.data?.qrBase64 || chargeRes.data?.qr_base64 || '';
+
+            if (base64) {
+              nextQr = base64.startsWith('data:image') ? base64 : `data:image/png;base64,${base64}`;
+            }
+
+            setMessage('PIX gerado. Escaneie o QR Code para pagar.');
+          }
+
+          setPendingTx(nextTx);
+          setPixPayload(nextPayload);
+          setPixQr(nextQr);
+
+          if (!nextPayload && !nextQr) {
+            setPixError('O servidor não retornou QR/payload do PIX. Verifique a maquininha/chaves e tente de novo.');
+          } else {
+            setPixError('');
+          }
+
+          setPendingPixSale({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
+          await recordLocalSale(cartSnapshot, paymentSnapshot, totalSnapshot);
+        } catch (err) {
+          console.error(err);
+          setPixError(getErrMsg(err));
+          setPendingTx(null);
+        } finally {
+          setPixLoading(false);
+          saleSubmittingRef.current = false;
+          setSaleSubmitting(false);
+        }
       } else if (paymentType === 'MONEY') {
         // Dinheiro/scambo: abre modal para confirmar pagamento na mão
         setPendingCashSale({ items: cartSnapshot, total: totalSnapshot, paymentType: paymentSnapshot });
-        setCashAmount(totalSnapshot);
+        setCashAmountInput('');
+        setCashChange(null);
+        setCashDebt(null);
+        setCashFormError('');
         setShowCashModal(true);
         return;
       } else {
@@ -472,6 +660,15 @@ const SalesPage = () => {
         paymentType,
         createdAt: Date.now()
       });
+      if (paymentType === 'PIX') {
+        setPixLoading(false);
+        setPixError(getErrMsg(err));
+      }
+    } finally {
+      if (paymentType !== 'PIX') {
+        saleSubmittingRef.current = false;
+        setSaleSubmitting(false);
+      }
     }
   };
 
@@ -494,39 +691,119 @@ const SalesPage = () => {
 
   const confirmCashPayment = async () => {
     if (!pendingCashSale) return;
+    if (saleSubmittingRef.current) return;
+    const saleSnapshot = pendingCashSale;
+    const totalDue = saleSnapshot.total;
+    const paid = parseCashAmount(cashAmountInput || '0');
+    const toCents = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100);
+    const deltaCents = toCents(paid) - toCents(totalDue);
+    const hasDebt = deltaCents < 0;
+    const changeValue = deltaCents > 0 ? deltaCents / 100 : 0;
+    const debtValue = deltaCents < 0 ? Math.abs(deltaCents) / 100 : 0;
+    setCashFormError('');
+
+    if (hasDebt) {
+      if (!cashPayerName.trim()) {
+        setCashFormError('Nome é obrigatório para fiado (pagamento incompleto).');
+        return;
+      }
+      const cpfDigits = cashPayerCpf.replace(/\D/g, '');
+      if (cpfDigits.length !== 11) {
+        setCashFormError('CPF é obrigatório (11 dígitos) para fiado (pagamento incompleto).');
+        return;
+      }
+    }
+
+    // Mostra TROCO/DIVIDA imediatamente (independente do backend/IDB)
+    if (hasDebt) {
+      setCashDebt(debtValue > 0 ? debtValue : null);
+      setCashChange(null);
+      saveFiado({ name: cashPayerName.trim(), cpf: cashPayerCpf, amount: debtValue });
+    } else {
+      setCashChange(changeValue > 0 ? changeValue : null);
+      setCashDebt(null);
+    }
+
+    // Gera notinha e libera o PDV para o próximo atendimento
+    setLastReceipt({ items: saleSnapshot.items, total: saleSnapshot.total, paymentType: saleSnapshot.paymentType });
+    setCart([]);
+    setAppliedCoupon(null);
+    setCoupon('');
+
+    // Fecha o modal de dinheiro imediatamente (o TROCO/DIVIDA aparece por cima)
+    setShowCashModal(false);
+    setPendingCashSale(null);
+
+    let saleRegistered = false;
+    saleSubmittingRef.current = true;
+    setSaleSubmitting(true);
     try {
-      // Apenas registra a venda; o pagamento já foi feito no caixa físico
+      let clientId: string | undefined;
+      if (hasDebt) {
+        const cpfDigits = cashPayerCpf.replace(/\D/g, '');
+        try {
+          const searchRes = await api.get<{ id: string; cpf?: string | null }[]>('/clients', {
+            params: { q: cpfDigits, limit: 50 }
+          });
+          const existing = (searchRes.data || []).find(
+            (c) => (c.cpf || '').toString().replace(/\D/g, '') === cpfDigits
+          );
+          if (existing?.id) {
+            clientId = existing.id;
+          } else {
+            const createRes = await api.post('/clients', {
+              name: cashPayerName.trim(),
+              cpf: cpfDigits
+            });
+            clientId = createRes.data?.id;
+          }
+        } catch {
+          // se falhar criar cliente, seguimos sem vínculo (fiado fica no localStorage)
+        }
+      }
+
       await api.post('/sales', {
-        items: pendingCashSale.items.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+        items: saleSnapshot.items.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
         couponCode: appliedCoupon?.code,
-        paymentType: pendingCashSale.paymentType
+        clientId,
+        paymentType: saleSnapshot.paymentType
       });
+      saleRegistered = true;
+
       setMessage('Venda registrada com sucesso');
-      setLastReceipt({ items: pendingCashSale.items, total: pendingCashSale.total, paymentType: pendingCashSale.paymentType });
-      setCart([]);
-      setAppliedCoupon(null);
-      setCoupon('');
-      await recordLocalSale(pendingCashSale.items, pendingCashSale.paymentType, pendingCashSale.total);
+      try {
+        await recordLocalSale(saleSnapshot.items, saleSnapshot.paymentType, saleSnapshot.total);
+      } catch {
+        // ignore: não bloqueia UI nem gera venda pendente duplicada
+      }
     } catch (err) {
-      setMessage('Erro ao registrar venda, salvando para sincronizar depois.');
-      const saleId = crypto.randomUUID();
-      await addPendingSale({
-        id: saleId,
-        items: pendingCashSale.items.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
-        total: pendingCashSale.total,
-        paymentType: pendingCashSale.paymentType,
-        createdAt: Date.now()
-      });
+      if (!saleRegistered) {
+        setMessage('Erro ao registrar venda. Salvando para sincronizar depois.');
+        const saleId = crypto.randomUUID();
+        await addPendingSale({
+          id: saleId,
+          items: saleSnapshot.items.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+          total: saleSnapshot.total,
+          paymentType: saleSnapshot.paymentType,
+          createdAt: Date.now()
+        });
+      }
     } finally {
-      setShowCashModal(false);
-      setPendingCashSale(null);
-      setCashPayerName('');
-      setCashPayerCpf('');
+      saleSubmittingRef.current = false;
+      setSaleSubmitting(false);
+      setCashAmountInput('');
+      if (!hasDebt) {
+        setCashPayerName('');
+        setCashPayerCpf('');
+      }
     }
   };
 
   const confirmCardPayment = async () => {
     if (!pendingCardSale) return;
+    if (saleSubmittingRef.current) return;
+    saleSubmittingRef.current = true;
+    setSaleSubmitting(true);
     try {
       // Pagamento já passou na maquininha física; aqui só registramos a venda
       await api.post('/sales', {
@@ -555,6 +832,8 @@ const SalesPage = () => {
         createdAt: Date.now()
       });
     } finally {
+      saleSubmittingRef.current = false;
+      setSaleSubmitting(false);
       setShowCardModal(false);
       setPendingCardSale(null);
       setCardAuthCode('');
@@ -571,8 +850,10 @@ const SalesPage = () => {
     if (!lastReceipt) return null;
     const receiptText = buildReceiptText(lastReceipt);
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-mono text-slate-800">
-        <pre className="whitespace-pre-wrap text-center md:text-left">{receiptText}</pre>
+      <div className="flex justify-center px-3 sm:px-4">
+        <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-4 text-sm font-mono text-slate-800">
+          <pre className="whitespace-pre-wrap text-center">{receiptText}</pre>
+        </div>
       </div>
     );
   };
@@ -633,14 +914,6 @@ const SalesPage = () => {
 
   return (
     <div className="space-y-6">
-      {(isOffline || pendingCount > 0) && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {isOffline ? 'Offline – mostrando dados locais.' : 'Online'}
-          {pendingCount > 0 && (
-            <span className="ml-2 font-semibold text-amber-900">Vendas pendentes: {pendingCount}</span>
-          )}
-        </div>
-      )}
       <div className="grid gap-4 lg:grid-cols-[2.5fr_0.8fr]">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
@@ -904,19 +1177,46 @@ const SalesPage = () => {
                     {pixKeys.map((k) => (
                       <button
                         key={k.id}
-                        onClick={() => setSelectedPixKey(k.id)}
-                        className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
-                          selectedPixKey === k.id ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'
+                        onClick={() => {
+                          setSelectedPixKey(k.id);
+                          setPixMethod('KEY');
+                        }}
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold ${
+                          pixMethod === 'KEY' && selectedPixKey === k.id
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-slate-200 bg-white'
                         }`}
                       >
                         {k.type.toUpperCase()}
                       </button>
                     ))}
+                    <button
+                      onClick={() => {
+                        setPixMethod('MP');
+                        setSelectedPixKey(null);
+                      }}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold ${
+                        pixMethod === 'MP' ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'
+                      }`}
+                      title="Receber via Mercado Pago"
+                    >
+                      <img src="/mp.png" alt="Mercado Pago" className="h-5 w-5" />
+                      <span>Mercado Pago</span>
+                    </button>
                   </div>
                 </div>
               )}
 
-              <button className="btn-primary w-full" onClick={finalize} disabled={!cart.length}>
+              <button
+                className="btn-primary w-full"
+                onClick={finalize}
+                disabled={
+                  saleSubmitting ||
+                  !cart.length ||
+                  (paymentType === 'PIX' &&
+                    (!pixMethod || (pixMethod === 'KEY' && pixKeys.length > 0 && !selectedPixKey)))
+                }
+              >
                 {paymentType === 'PIX' ? 'Gerar PIX' : 'Finalizar venda'}
               </button>
               {message && <p className="text-xs text-slate-500">{message}</p>}
@@ -937,149 +1237,278 @@ const SalesPage = () => {
         </div>
       </div>
       {showPixModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="relative flex items-center justify-center">
-              <h3 className="text-lg font-semibold text-charcoal">Pagamento PIX</h3>
-              <button className="absolute right-0 text-slate-500" onClick={() => setShowPixModal(false)}>
-                ✕
-              </button>
+        <ModalPortal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4">
+            <div className="w-full max-w-4xl rounded-2xl bg-white p-8 shadow-2xl">
+              <div className="relative flex flex-col items-center gap-2">
+                <div className="flex items-center justify-center gap-3">
+                  <h3 className="text-2xl font-bold text-charcoal">{getPixTitle()}</h3>
+                  {pixMethod === 'MP' && <img src="/mp.png" alt="Mercado Pago" className="h-9 w-auto" />}
+                </div>
+                <button className="absolute right-0 top-0 text-slate-500" onClick={() => setShowPixModal(false)}>
+                  ✕
+                </button>
+              </div>
+              <div className="mt-6 flex flex-col items-center gap-4">
+                <div className="relative flex flex-col items-center gap-3">
+                  {pixQr ? (
+                    <img src={pixQr} alt="QR Pix" className="h-80 w-80 transition-opacity duration-300" />
+                  ) : pixPayload ? (
+                    <code className="block max-w-2xl break-words rounded-lg bg-slate-100 p-4 text-center text-sm text-slate-700">
+                      {pixPayload}
+                    </code>
+                  ) : pixError ? (
+                    <p className="text-base text-red-600">{pixError}</p>
+                  ) : pixLoading ? (
+                    <p className="text-base text-slate-600">Gerando QR...</p>
+                  ) : (
+                    <p className="text-base text-slate-600">Gerando QR...</p>
+                  )}
+                  {paymentStatus === 'paid' && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="animate-ping-slow flex h-36 w-36 items-center justify-center rounded-full bg-green-500/80 text-white">
+                        ✔
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {pixPayload && (
+                  <button className="btn-secondary" onClick={() => navigator.clipboard?.writeText(pixPayload)}>
+                    Copiar código PIX
+                  </button>
+                )}
+                <div className="text-3xl font-bold text-primary">
+                  R$ {(pendingPixSale?.total ?? total.total).toFixed(2)}
+                </div>
+              </div>
+              <div className="mt-6 flex justify-center">
+                <button
+                  className={`btn-primary w-full max-w-4xl leading-none ${
+                    pixMethod === 'MP' ? 'h-[60px] text-[64px]' : 'h-[120px] text-[128px]'
+                  }`}
+                  onClick={() => setShowPixModal(false)}
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
-            <div className="mt-4 flex flex-col items-center gap-3">
-             <div className="relative flex flex-col items-center gap-3">
-               {pixQr ? (
-                 <img src={pixQr} alt="QR Pix" className="h-64 w-64 transition-opacity duration-300" />
-               ) : (
-                 <p className="text-sm text-slate-600">Gerando QR...</p>
-               )}
-               {paymentStatus === 'paid' && (
-                 <div className="absolute inset-0 flex items-center justify-center">
-                   <div className="animate-ping-slow flex h-28 w-28 items-center justify-center rounded-full bg-green-500/80 text-white">
-                     ✔
-                   </div>
-                 </div>
-               )}
-             </div>
-             <div className="text-2xl font-bold text-primary">
-               R$ {(pendingPixSale?.total ?? total.total).toFixed(2)}
-             </div>
-            </div>
-            <div className="mt-4 text-right">
-          <button className="btn-primary" onClick={() => setShowPixModal(false)}>
-            Fechar
-          </button>
-        </div>
-        </div>
-      </div>
+          </div>
+        </ModalPortal>
       )}
       {showCashModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="relative flex items-center justify-center">
-              <h3 className="text-lg font-semibold text-charcoal">Pagamento por dinheiro/scambo</h3>
-              <button className="absolute right-0 text-slate-500" onClick={() => setShowCashModal(false)}>
-                ✕
-              </button>
-            </div>
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="text-xs uppercase tracking-wide text-slate-500">Valor recebido</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={cashAmount}
-                  onChange={(e) => setCashAmount(Number(e.target.value))}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-xs uppercase tracking-wide text-slate-500">Nome (opcional)</label>
-                <input
-                  value={cashPayerName}
-                  onChange={(e) => setCashPayerName(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-xs uppercase tracking-wide text-slate-500">CPF (opcional)</label>
-                <input
-                  value={cashPayerCpf}
-                  onChange={(e) => setCashPayerCpf(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                />
-              </div>
-              <div className="mt-4 flex items-center justify-end gap-2">
-                <button className="btn-ghost" onClick={() => setShowCashModal(false)}>
-                  Cancelar
+        <ModalPortal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+              <div className="relative flex items-center justify-center">
+                <h3 className="text-lg font-semibold text-charcoal">Pagamento por dinheiro/scambo</h3>
+                <button className="absolute right-0 text-slate-500" onClick={() => setShowCashModal(false)}>
+                  ✕
                 </button>
-                <button className="btn-primary" onClick={confirmCashPayment}>
-                  Pagar
-                </button>
+              </div>
+              <div className="mt-4 space-y-3">
+                {cashFormError && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{cashFormError}</p>}
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-slate-500">VALOR RECEBIDO</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={cashAmountInput}
+                    onChange={(e) => setCashAmountInput(e.target.value.replace(/[^0-9.,]/g, ''))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div className="flex items-center justify-between rounded-xl bg-lime-50 px-3 py-2 font-semibold text-charcoal">
+                  <span className="text-xs uppercase text-slate-500">VALOR TOTAL</span>
+                  <span>R$ {(pendingCashSale?.total ?? total.total).toFixed(2)}</span>
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-slate-500">
+                    Nome {pendingCashSale && parseCashAmount(cashAmountInput || '0') < pendingCashSale.total ? '(obrigatório para fiado)' : '(opcional)'}
+                  </label>
+                  <input
+                    value={cashPayerName}
+                    onChange={(e) => setCashPayerName(e.target.value)}
+                    required={Boolean(pendingCashSale && parseCashAmount(cashAmountInput || '0') < pendingCashSale.total)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-slate-500">
+                    CPF {pendingCashSale && parseCashAmount(cashAmountInput || '0') < pendingCashSale.total ? '(obrigatório para fiado)' : '(opcional)'}
+                  </label>
+                  <input
+                    value={cashPayerCpf}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                      const part1 = digits.slice(0, 3);
+                      const part2 = digits.slice(3, 6);
+                      const part3 = digits.slice(6, 9);
+                      const part4 = digits.slice(9, 11);
+                      const formatted = [part1, part2, part3].filter(Boolean).join('.') + (part4 ? `-${part4}` : '');
+                      setCashPayerCpf(formatted);
+                    }}
+                    inputMode="numeric"
+                    pattern="[0-9.-]*"
+                    required={Boolean(pendingCashSale && parseCashAmount(cashAmountInput || '0') < pendingCashSale.total)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div className="mt-4 flex items-center justify-end gap-2">
+                  <button className="btn-ghost" onClick={() => setShowCashModal(false)}>
+                    Cancelar
+                  </button>
+                  <button className="btn-primary" onClick={confirmCashPayment} disabled={saleSubmitting}>
+                    {saleSubmitting ? 'Registrando...' : 'Pagar'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
+      )}
+      {cashChange !== null && cashChange > 0 && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4">
+            <div className="w-full max-w-4xl rounded-2xl bg-white p-10 text-center shadow-2xl md:p-14">
+              <div className="flex items-center justify-center gap-4 text-orange-500">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="140"
+                  height="140"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-hand-coins-icon"
+                >
+                  <path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17" />
+                  <path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9" />
+                  <path d="m2 16 6 6" />
+                  <circle cx="16" cy="9" r="2.9" />
+                  <circle cx="6" cy="5" r="3" />
+                </svg>
+                <h3 className="font-bold text-orange-500 text-[clamp(40px,6vw,88px)] leading-none">TROCO</h3>
+              </div>
+              <div className="mt-8 font-bold text-lime-500 text-[clamp(44px,7vw,110px)] leading-none">
+                R$ {cashChange.toFixed(2)}
+              </div>
+              <button
+                className="mt-10 flex h-[clamp(72px,10vh,140px)] w-full items-center justify-center rounded-2xl bg-orange-500 px-6 font-semibold text-white shadow transition hover:brightness-110 text-[clamp(28px,4vw,64px)]"
+                onClick={() => setCashChange(null)}
+              >
+                Feito
+              </button>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+      {cashDebt !== null && cashDebt > 0 && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4">
+            <div className="w-full max-w-4xl rounded-2xl bg-white p-10 text-center shadow-2xl md:p-14">
+              <div className="flex items-center justify-center gap-4 text-orange-500">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="140"
+                  height="140"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-hand-coins-icon"
+                >
+                  <path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17" />
+                  <path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9" />
+                  <path d="m2 16 6 6" />
+                  <circle cx="16" cy="9" r="2.9" />
+                  <circle cx="6" cy="5" r="3" />
+                </svg>
+                <h3 className="font-bold text-orange-500 text-[clamp(40px,6vw,88px)] leading-none">DIVIDA</h3>
+              </div>
+              <div className="mt-8 font-bold text-red-400 text-[clamp(44px,7vw,110px)] leading-none">
+                R$ {cashDebt.toFixed(2)}
+              </div>
+              <button
+                className="mt-10 flex h-[clamp(72px,10vh,140px)] w-full items-center justify-center rounded-2xl bg-red-500 px-6 font-semibold text-white shadow transition hover:brightness-110 text-[clamp(28px,4vw,64px)]"
+                onClick={() => {
+                  setCashDebt(null);
+                  setCashPayerName('');
+                  setCashPayerCpf('');
+                }}
+              >
+                A DEVER
+              </button>
+            </div>
+          </div>
+        </ModalPortal>
       )}
       {showCardModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="relative flex items-center justify-center">
-              <h3 className="text-lg font-semibold text-charcoal">Pagamento na maquininha</h3>
-              <button className="absolute right-0 text-slate-500" onClick={() => setShowCardModal(false)}>
-                ✕
-              </button>
-            </div>
-            <div className="mt-4 space-y-3 text-sm text-slate-700">
-              <p>Confirme o pagamento realizado na maquininha física.</p>
-              <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 font-semibold text-charcoal">
-                <span>Total</span>
-                <span>R$ {(pendingCardSale?.total ?? total.total).toFixed(2)}</span>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-slate-500">Bandeira (opcional)</label>
-                  <input
-                    value={cardBrand}
-                    onChange={(e) => setCardBrand(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                    placeholder="Visa, Mastercard..."
-                  />
-                </div>
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-slate-500">NSU / Autorização</label>
-                  <input
-                    value={cardAuthCode}
-                    onChange={(e) => setCardAuthCode(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                    placeholder="Código da maquininha"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs uppercase tracking-wide text-slate-500">Valor cobrado</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={cardValue}
-                  onChange={(e) => setCardValue(Number(e.target.value))}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                />
-              </div>
-              <div className="mt-4 flex items-center justify-end gap-2">
-                <button className="btn-ghost" onClick={() => setShowCardModal(false)}>
-                  Cancelar
-                </button>
-                <button className="btn-primary" onClick={confirmCardPayment}>
-                  Pagamento aprovado na maquininha
+        <ModalPortal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+              <div className="relative flex items-center justify-center">
+                <h3 className="text-lg font-semibold text-charcoal">Pagamento na maquininha</h3>
+                <button className="absolute right-0 text-slate-500" onClick={() => setShowCardModal(false)}>
+                  ✕
                 </button>
               </div>
-              <p className="text-xs text-slate-500">
-                Observação: a cobrança ocorre na maquininha física. Aqui registramos apenas o resultado para estoque e
-                recibo.
-              </p>
+              <div className="mt-4 space-y-3 text-sm text-slate-700">
+                <p>Confirme o pagamento realizado na maquininha física.</p>
+                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 font-semibold text-charcoal">
+                  <span>Total</span>
+                  <span>R$ {(pendingCardSale?.total ?? total.total).toFixed(2)}</span>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <label className="text-xs uppercase tracking-wide text-slate-500">Bandeira (opcional)</label>
+                    <input
+                      value={cardBrand}
+                      onChange={(e) => setCardBrand(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                      placeholder="Visa, Mastercard..."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs uppercase tracking-wide text-slate-500">NSU / Autorização</label>
+                    <input
+                      value={cardAuthCode}
+                      onChange={(e) => setCardAuthCode(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                      placeholder="Código da maquininha"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-slate-500">Valor cobrado</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={cardValue}
+                    onChange={(e) => setCardValue(Number(e.target.value))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div className="mt-4 flex items-center justify-end gap-2">
+                  <button className="btn-ghost" onClick={() => setShowCardModal(false)}>
+                    Cancelar
+                  </button>
+                  <button className="btn-primary" onClick={confirmCardPayment} disabled={saleSubmitting}>
+                    {saleSubmitting ? 'Registrando...' : 'Pagamento aprovado na maquininha'}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Observação: a cobrança ocorre na maquininha física. Aqui registramos apenas o resultado para estoque e
+                  recibo.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
       {lastReceipt && renderReceipt()}
     </div>

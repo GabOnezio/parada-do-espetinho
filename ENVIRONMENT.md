@@ -75,6 +75,13 @@ VITE_APP_URL="http://localhost:5173"
 
 ## Como iniciar serviços
 
+- **Atalho (monorepo / 2 terminais)**  
+  Na raiz do projeto, após `npm install`, rode:
+  ```sh
+  npm run dev --workspace backend
+  npm run dev --workspace frontend
+  ```
+
 - **MySQL (Railway – via TCP Proxy)**  
   Não precisa “subir” manualmente, mas você pode conectar para testar:
   ```sh
