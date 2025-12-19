@@ -67,22 +67,24 @@ type CartItem = { product: Product; quantity: number };
 type PixKey = { id: string; type: string; key: string; isDefault: boolean };
 type FiadoEntry = { id: string; name: string; cpf: string; amount: number; createdAt: number };
 
+const formatPaymentLabel = (paymentType: string) => {
+  switch (paymentType) {
+    case 'PIX':
+      return 'PIX';
+    case 'MONEY':
+      return 'DINHEIRO';
+    case 'CARD_DEBIT':
+      return 'CARTÃO DE DÉBITO';
+    case 'CARD_CREDIT':
+      return 'CARTÃO DE CRÉDITO';
+    default:
+      return paymentType;
+  }
+};
+
 // Constrói o texto do recibo em formato ASCII (monoespaçado)
 function buildReceiptText(receipt: { items: CartItem[]; total: number; paymentType: string }) {
-  const label = (() => {
-    switch (receipt.paymentType) {
-      case 'PIX':
-        return 'PIX';
-      case 'MONEY':
-        return 'DINHEIRO';
-      case 'CARD_DEBIT':
-        return 'CARTÃO DE DÉBITO';
-      case 'CARD_CREDIT':
-        return 'CARTÃO DE CRÉDITO';
-      default:
-        return receipt.paymentType;
-    }
-  })();
+  const label = formatPaymentLabel(receipt.paymentType);
 
   const lines: string[] = [];
   lines.push('(---Parada--do--Espetinho->');
@@ -99,6 +101,68 @@ function buildReceiptText(receipt: { items: CartItem[]; total: number; paymentTy
   lines.push('*** PAGAMENTO APROVADO ***');
 
   return lines.join('\n');
+}
+
+// Constrói o HTML do recibo para impressão térmica (80mm)
+function buildReceiptHtml(receipt: { items: CartItem[]; total: number; paymentType: string }) {
+  const now = new Date();
+  const label = formatPaymentLabel(receipt.paymentType);
+
+  const itemsHtml = receipt.items
+    .map(
+      (it) => `
+        <div style="margin-bottom: 10px;">
+          <div class="bold">${it.product.name}</div>
+          <div>GTIN ${it.product.gtin} • ${it.product.brand}</div>
+          <div>R$ ${Number(it.product.price).toFixed(2)}${it.quantity > 1 ? ` x${it.quantity}` : ''}</div>
+          ${it.product.cost ? `<div>Taxa: R$ ${Number(it.product.cost).toFixed(2)}</div>` : ''}
+        </div>
+      `
+    )
+    .join('');
+
+  return `
+    <div class="center bold">Parada do Espetinho</div>
+    <div class="center">${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>
+    <hr />
+    ${itemsHtml}
+    <hr />
+    <div class="bold" style="display: flex; justify-content: space-between;">
+      <span>Total</span>
+      <span>R$ ${receipt.total.toFixed(2)}</span>
+    </div>
+    <div class="center" style="margin-top: 6px;">Pagamento: ${label}</div>
+    <div class="center bold" style="margin-top: 8px;">PAGAMENTO APROVADO</div>
+    <div class="center" style="margin-top: 12px; font-size: 12px;">Obrigado pela preferência!</div>
+  `;
+}
+
+// Abre uma janela e chama print(), pronto para impressora térmica 58/80mm
+export function printReceipt(html: string) {
+  const w = window.open('', 'PRINT', 'width=420,height=600');
+  if (!w) return;
+
+  w.document.write(`
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Recibo</title>
+        <style>
+          @page { size: 80mm auto; margin: 0; }
+          body { width: 80mm; margin: 0; padding: 6mm; font-family: monospace; }
+          .center { text-align: center; }
+          .bold { font-weight: 700; }
+          hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
+        </style>
+      </head>
+      <body>${html}</body>
+    </html>
+  `);
+
+  w.document.close();
+  w.focus();
+  w.print();
+  w.close();
 }
 
 const ModalPortal = ({ children }: { children: React.ReactNode }) => {
@@ -250,6 +314,7 @@ const SalesPage = () => {
   const [pendingCashSale, setPendingCashSale] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
   const [pendingCardSale, setPendingCardSale] = useState<{ items: CartItem[]; total: number; paymentType: string } | null>(null);
   const [pendingTx, setPendingTx] = useState<string | null>(null);
+  const lastPrintedReceiptRef = useRef<string | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
   const totalItems = useMemo(() => cart.reduce((acc, item) => acc + (item.quantity || 0), 0), [cart]);
 
@@ -396,6 +461,16 @@ const SalesPage = () => {
   useEffect(() => {
     searchRef.current?.focus();
   }, []);
+
+  // Imprime automaticamente a última venda aprovada (via window.print, cupom 80mm)
+  useEffect(() => {
+    if (!lastReceipt) return;
+    const fingerprint = JSON.stringify(lastReceipt);
+    if (lastPrintedReceiptRef.current === fingerprint) return;
+    lastPrintedReceiptRef.current = fingerprint;
+    const html = buildReceiptHtml(lastReceipt);
+    printReceipt(html);
+  }, [lastReceipt]);
 
   useEffect(() => {
     let cancelled = false;
@@ -846,14 +921,23 @@ const SalesPage = () => {
     return raw ? (JSON.parse(raw) as Record<string, number>) : {};
   }, [cart.length]); // recalcula quando mexe no carrinho (após venda)
 
+  const handlePrintLastReceipt = () => {
+    if (!lastReceipt) return;
+    const html = buildReceiptHtml(lastReceipt);
+    printReceipt(html);
+  };
+
   const renderReceipt = () => {
     if (!lastReceipt) return null;
     const receiptText = buildReceiptText(lastReceipt);
     return (
-      <div className="flex justify-center px-3 sm:px-4">
+      <div className="flex flex-col items-center gap-2 px-3 sm:px-4">
         <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-4 text-sm font-mono text-slate-800">
           <pre className="whitespace-pre-wrap text-center">{receiptText}</pre>
         </div>
+        <button className="btn-primary" onClick={handlePrintLastReceipt}>
+          Imprimir cupom
+        </button>
       </div>
     );
   };
